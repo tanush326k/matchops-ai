@@ -909,10 +909,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {/* Demo Mode Scenario Selectors */}
               <div className="glass p-5 rounded-2xl glow-card flex flex-col gap-3">
                 <div className="flex items-center gap-1.5">
-                  <Cpu className="w-4 h-4 text-blue-400 animate-pulse" />
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-gray-300">
+                  <Cpu className="w-3.5 h-3.5 text-blue-500/80 animate-pulse" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">
                     Live Demo Mode Scenarios
-                  </h3>
+                  </h4>
                 </div>
                 <p className="text-[10px] text-gray-400 leading-normal">
                   Instantly switch simulation phases to update sensor streams and verify proactive routing recommendations.
@@ -952,11 +952,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               {/* Organizer Executive Health & Operations Dashboard KPIs */}
               {simulationState?.kpis && (
-                <div className="glass p-6 rounded-2xl glow-card flex flex-col gap-4">
-                  <div className="flex items-center gap-1.5">
-                    <Shield className="w-4 h-4 text-blue-400" />
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-gray-300">
-                      Organizer Executive KPIs
+                <div className="glass p-6 rounded-2xl glow-card flex flex-col gap-4 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.08)]">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-blue-400" />
+                    <h3 className="text-xl font-bold tracking-wide text-white">
+                      Operational KPIs
                     </h3>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -995,10 +995,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {diagnostics && (
                 <div className="glass p-5 rounded-2xl glow-card flex flex-col gap-3">
                   <div className="flex items-center gap-1.5">
-                    <Wifi className="w-4 h-4 text-emerald-400 animate-pulse" />
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-gray-300">
+                    <Wifi className="w-3.5 h-3.5 text-emerald-500/80 animate-pulse" />
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">
                       MatchOps AI Health Diagnostics
-                    </h3>
+                    </h4>
                   </div>
                   <div className="grid grid-cols-2 gap-2.5 text-[9.5px] font-semibold text-gray-400 font-mono">
                     <div className="p-2 bg-black/45 border border-white/5 rounded-lg">
@@ -1025,10 +1025,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               {/* Sustainability widget */}
               <div className="glass p-6 rounded-2xl glow-card">
-                <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-gray-300 flex items-center gap-1.5">
-                  <BarChart2 className="w-4 h-4 text-emerald-400" />
-                  Sustainability Telemetry
-                </h3>
+                <div className="text-xs font-bold uppercase tracking-wider mb-4 text-gray-400 flex items-center gap-1.5">
+                  <BarChart2 className="w-3.5 h-3.5 text-emerald-500/80" />
+                  <span>Sustainability Telemetry</span>
+                </div>
                 <div className="flex flex-col gap-4 text-xs">
                   <div>
                     <div className="flex justify-between items-center text-gray-300 font-bold mb-1">
@@ -1059,9 +1059,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               {/* Volunteer Allocation reallocator tool */}
               <div className="glass p-6 rounded-2xl glow-card">
-                <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-gray-300">
+                <h4 className="text-xs font-bold uppercase tracking-wider mb-4 text-gray-400">
                   Staff Resource Reallocation
-                </h3>
+                </h4>
                 
                 <div className="flex flex-col gap-2.5 mb-4 text-xs font-semibold">
                   {volunteers.allocations && Object.entries(volunteers.allocations).map(([zName, count]: any) => (
@@ -1126,9 +1126,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {/* Live Operations Timeline */}
               <div className="glass p-6 rounded-2xl glow-card flex flex-col gap-4">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-gray-300">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400">
                     Live Operations Timeline
-                  </h3>
+                  </h4>
                   {simulationState && (
                     <span className="text-[10px] font-bold text-gray-400 uppercase">
                       Score: {matches.find(m => m.id === "match-02")?.score || "N/A"}

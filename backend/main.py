@@ -1,5 +1,6 @@
 import os
 import asyncio
+from datetime import datetime
 from fastapi import FastAPI, HTTPException, Body, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -29,6 +30,17 @@ async def simulation_tick_loop():
 @app.on_event("startup")
 def startup_event():
     asyncio.create_task(simulation_tick_loop())
+
+@app.get("/api/health")
+def get_health():
+    return {
+        "status": "ok",
+        "version": "RC2",
+        "simulation": True,
+        "gemini_available": bool(orchestrator.api_key),
+        "fallback_available": True,
+        "timestamp": datetime.utcnow().isoformat() + "Z"
+    }
 
 # Enable CORS for local React development
 app.add_middleware(
