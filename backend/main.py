@@ -181,4 +181,20 @@ def get_diagnostics():
 # Serve Frontend static assets if available (for production build)
 frontend_dist_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend/dist")
 if os.path.exists(frontend_dist_path):
-    app.mount("/", StaticFiles(directory=frontend_dist_path, html=True), name="static")
+    from fastapi.responses import FileResponse
+
+    @app.get("/{rest_of_path:path}")
+    async def serve_spa(rest_of_path: str):
+        if rest_of_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API route not found")
+        
+        # Check if the file exists in the frontend dist folder
+        file_path = os.path.join(frontend_dist_path, rest_of_path)
+        if rest_of_path and os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+            
+        # Serve index.html as the SPA fallback
+        index_file = os.path.join(frontend_dist_path, "index.html")
+        if os.path.exists(index_file):
+            return FileResponse(index_file)
+        raise HTTPException(status_code=404, detail="Frontend build index.html not found")
