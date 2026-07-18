@@ -1,0 +1,38 @@
+# Node modules
+node_modules/
+
+# Production builds
+dist/
+build/
+out/
+
+# Python cache & tests
+__pycache__/
+.pytest_cache/
+*.pyc
+*.pyo
+*.pyd
+
+# Private environment configs
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE configurations
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS metadata
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+logs/
