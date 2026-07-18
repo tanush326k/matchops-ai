@@ -1,6 +1,6 @@
 # MatchOps AI — The Intelligent Operations Copilot for FIFA World Cup 2026
 
-**MatchOps AI** is a production-grade, GenAI-enabled stadium operations copilot designed for MetLife Stadium during the FIFA World Cup 2026. The platform provides customized dashboards and specialized workflows for four primary stakeholder roles: **Fans**, **Volunteers**, **Security/Venue Staff**, and **Organizers**.
+**MatchOps AI** is a production-oriented, GenAI-enabled stadium operations copilot designed for MetLife Stadium during the FIFA World Cup 2026. The platform provides customized dashboards and specialized workflows for four primary stakeholder roles: **Fans**, **Volunteers**, **Security/Venue Staff**, and **Organizers**.
 
 Unlike standard chatbots or generic dashboards, MatchOps AI coordinates a multi-stage AI reasoning orchestrator to analyze user queries, build grounded context, apply stadium safety and routing rules, and render structured recommendations alongside explanation logs.
 
@@ -110,6 +110,18 @@ Run Uvicorn from the root workspace directory:
 py -m uvicorn backend.main:app --reload --port 8000
 ```
 FastAPI docs will be available at: http://localhost:8000/docs
+
+Verify the operational health check route at http://localhost:8000/api/health. It outputs the following JSON response:
+```json
+{
+  "status": "ok",
+  "version": "RC3",
+  "simulation": true,
+  "gemini_available": true,
+  "fallback_available": true,
+  "timestamp": "ISO8601_TIMESTAMP"
+}
+```
 
 ---
 
