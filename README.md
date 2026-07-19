@@ -140,6 +140,9 @@ The Gemini-powered Copilot is not a chatbot — it is a **structured decision su
 - **Multi-Step Action Plans** with chronological execution steps
 - **Data Assumptions** listing which telemetry sources were consulted
 - **Missing Information Disclosures** for transparent uncertainty communication
+- **Live Telemetry Grounding** — all responses dynamically bind to real-time simulation data (queue times, incident details, volunteer counts, solar offset, transport frequencies) rather than static templates
+
+> **12 Supported Intent Categories:** Navigation, Crowd Intelligence, Crowd Risk, Accessibility, Emergency Response, Transport Planning, Incident Reporting, Volunteer Allocation, Organizer Summary, Sustainability, Lost & Found, and General Information.
 
 ### 📊 Real-Time KPI Monitoring
 
@@ -206,7 +209,7 @@ Each role sees a tailored workspace with permission-scoped AI access and appropr
 | Navigation & Wayfinding | ✅ | ✅ | ✅ | ✅ |
 | Accessibility Planning | ✅ | ✅ | ✅ | ✅ |
 | Transport Intelligence | ✅ | — | ✅ | ✅ |
-| Lost & Found | ✅ | ✅ | — | ✅ |
+| Lost & Found | ✅ | ✅ | ✅ | ✅ |
 | Crowd Intelligence | — | ✅ | ✅ | ✅ |
 | Crowd Risk Analysis | — | — | ✅ | ✅ |
 | Incident Reporting | — | ✅ | ✅ | ✅ |
@@ -251,11 +254,12 @@ graph TD
 |:---|:---|:---|
 | 1 | **Multi-Intent Classifier** | Classifies queries into 12 intent categories. Supports compound multi-intent queries (e.g., *"Find Gate C and check shuttle schedules"*). |
 | 2 | **Role Authorization** | Validates the query against the user's role permissions. Generates polite refusal responses for unauthorized intents. |
-| 3 | **Context Grounder** | Assembles live sensor telemetry — matches, queue waits, restrooms, transit delays, sustainability offsets, staff shifts, and incident status. |
+| 3 | **Context Grounder** | Assembles live sensor telemetry — matches, queue waits, restrooms, transit delays, sustainability offsets, staff shifts, and incident status. All responses dynamically bind to the active simulation state. |
 | 4 | **Decision Planner** | Applies operational rules — turnstile detours, concourse medical bypasses, accessibility ramp routing, and congestion-aware gate recommendations. |
 | 5 | **Confidence Scorer** | Calculates a numerical confidence index (0.0–1.0) with explicit reasoning. Records data checklist omissions to prevent false certainty. |
 | 6 | **Session Memory** | Ingests up to 4 historical message pairs per session to support contextual follow-up questions. |
 | 7 | **Structured Output** | Gemini generates responses constrained to Pydantic models — ensuring valid recommendations, assumptions, checklists, and multi-step plans. |
+| 8 | **High-Fidelity Fallback Engine** | When Gemini API is unavailable, a local rules-based engine generates dynamically grounded responses for all 12 intent types using live telemetry values — with identical schema, confidence scoring, and multi-step plans. |
 
 </details>
 
