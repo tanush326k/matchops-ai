@@ -683,37 +683,66 @@ Generate the structured JSON response in {language} following the specified sche
         # EMERGENCY RESPONSE
         # -------------------------------------------------------------
         elif "Emergency Response" in intents:
-            res = {
-                "summary": "Emergency Dispatch Plan: Active Medical Dehydration Alert in Block 114, Row 12. Responder Team Alpha has been dispatched and is currently 2 minutes from scene.",
-                "recommendations": [
-                    {
-                        "action": "Clear Block 114 Concourse lanes",
-                        "detail": "Instruct local volunteers to clear spectator congestion to allow stretcher entry.",
-                        "priority": "High",
-                        "supporting_data": ["Incident #402: Active medical dehydration"],
-                        "assumptions": ["Team Alpha has access codes"],
-                        "suggested_actions": ["Open Gate #12 access barrier"],
-                        "warnings": ["Spectator crowd bottleneck"],
-                        "confidence_score": score
-                    }
-                ],
-                "priority": "High",
-                "confidence_reason": score_reason,
-                "missing_information": missing_info,
-                "warnings": ["Medical emergency in progress Block 114"],
-                "next_actions": ["Notify security dispatch lead", "Confirm Team Alpha arrival"],
-                "multi_step_plan": {
-                    "problem": "Spectator medical emergency in Block 114",
-                    "assessment": "Spectator dehydration requiring EMT assist. Corridor traffic blocks ambulance stretcher.",
-                    "recommended_actions": [
-                        "Dispatch Responder Team Alpha to Block 114",
-                        "Instruct security to clear lane 4 corridor",
-                        "Prepare Gate C emergency ambulance bay for transport"
+            active_incidents = context.get("active_incidents", [])
+            high_priority_inc = next((i for i in active_incidents if i.get("priority") == "High" and i.get("status") == "Active"), None)
+            
+            if high_priority_inc:
+                title = high_priority_inc.get("title", "Medical Emergency")
+                desc = high_priority_inc.get("description", "A spectator requires immediate assistance.")
+                loc = high_priority_inc.get("location", "Unknown Location")
+                staff = high_priority_inc.get("assigned_staff", 2)
+                res = {
+                    "summary": f"Emergency Dispatch Plan: Active Emergency ({title}) in {loc}. Incident Details: {desc}. Emergency responders have been dispatched.",
+                    "recommendations": [
+                        {
+                            "action": f"Clear {loc} Concourse lanes",
+                            "detail": f"Reason: Instruct local volunteers and staff to clear spectator congestion near {loc} to allow stretcher and medical vehicle entry.",
+                            "priority": "High",
+                            "supporting_data": [f"Incident ID: {high_priority_inc.get('id')}", f"Location: {loc}", f"Assigned staff: {staff}"],
+                            "assumptions": ["Responder crews have full access keys and pathways"],
+                            "suggested_actions": ["Clear adjacent corridors", "Assist emergency dispatchers"],
+                            "warnings": ["Spectator bottleneck forming nearby"],
+                            "confidence_score": score
+                        }
                     ],
-                    "expected_impact": "EMT arrival within 3m and safe spectator transport",
-                    "monitoring_advice": "Check responder radio channels for status"
+                    "priority": "High",
+                    "confidence_reason": score_reason,
+                    "missing_information": missing_info,
+                    "warnings": [f"Medical emergency in progress: {title} at {loc}"],
+                    "next_actions": ["Notify security dispatch lead", "Confirm responder arrival"],
+                    "multi_step_plan": {
+                        "problem": f"Active emergency: {title} in {loc}",
+                        "assessment": f"Spectator incident requiring medical/security team assist at {loc}.",
+                        "recommended_actions": [
+                            f"Dispatch responder teams to {loc}",
+                            "Instruct local personnel to clear transit corridor",
+                            "Open adjacent emergency access checkpoints"
+                        ],
+                        "expected_impact": "Responder arrival within 3m and safe spectator stabilization/transport",
+                        "monitoring_advice": "Check responder radio channels for status"
+                    }
                 }
-            }
+            else:
+                res = {
+                    "summary": "Emergency Dispatch Plan: No active high-priority emergencies reported in the last telemetry tick. Operational safety lines remain standby.",
+                    "recommendations": [
+                        {
+                            "action": "Maintain Emergency Standby",
+                            "detail": "Emergency response vehicles and personnel are stationed in emergency bays.",
+                            "priority": "Low",
+                            "supporting_data": ["Active medical and security teams: Standby"],
+                            "assumptions": ["Response vehicles remain clear of bottlenecks"],
+                            "suggested_actions": ["Check emergency readiness panel"],
+                            "warnings": [],
+                            "confidence_score": score
+                        }
+                    ],
+                    "priority": "Low",
+                    "confidence_reason": score_reason,
+                    "missing_information": missing_info,
+                    "warnings": [],
+                    "next_actions": ["Monitor stadium channels"]
+                }
 
         # -------------------------------------------------------------
         # TRANSPORT PLANNING
@@ -722,14 +751,16 @@ Generate the structured JSON response in {language} following the specified sche
             t = context.get("transport", {})
             m = t.get("metro", {})
             r = t.get("rideshare", {})
+            freq = m.get("frequency_minutes", 8)
+            wait_time = r.get("average_wait_minutes", 18)
             res = {
-                "summary": f"Transport Status: Meadowlands Station Metro is operational with {m.get('frequency_minutes', 8)}m frequency. Rideshare pickups are busy (wait time {r.get('average_wait_minutes', 18)}m). General Parking Lot B is recommended.",
+                "summary": f"Transport Status: Meadowlands Station Metro is operational with {freq}m frequency. Rideshare pickups are busy (wait time {wait_time}m). General Parking Lot B is recommended.",
                 "recommendations": [
                     {
                         "action": "Take Meadowlands Metro",
-                        "detail": "Fastest connection to Manhattan/Hoboken. Trains depart every 8 mins.",
+                        "detail": f"Fastest connection to Manhattan/Hoboken. Trains depart every {freq} mins.",
                         "priority": "High",
-                        "supporting_data": [f"Metro frequency: {m.get('frequency_minutes')}m"],
+                        "supporting_data": [f"Metro frequency: {freq}m"],
                         "assumptions": ["Train lines remain clear"],
                         "suggested_actions": ["Navigate to Meadowlands rail station"],
                         "warnings": [],
@@ -748,8 +779,10 @@ Generate the structured JSON response in {language} following the specified sche
         # -------------------------------------------------------------
         elif "Volunteer Allocation" in intents:
             vols = context.get("volunteers", {})
+            allocs = vols.get("allocations", {})
+            allocs_desc = ", ".join([f"{k}: {v} staff" for k, v in allocs.items()]) if allocs else "Zone B (85 staff), Zone A (75 staff)"
             res = {
-                "summary": f"Staff & Operations Telemetry: {vols.get('on_shift', 210)} of {vols.get('total_active', 250)} volunteers are on active shift. Main allocations: Zone B (85 staff), Zone A (75 staff). Operations are fluid.",
+                "summary": f"Staff & Operations Telemetry: {vols.get('on_shift', 210)} of {vols.get('total_active', 250)} volunteers are on active shift. Allocations: {allocs_desc}. Operations are fluid.",
                 "recommendations": [
                     {
                         "action": "Reallocate 5 staff to Gate A",
@@ -773,14 +806,16 @@ Generate the structured JSON response in {language} following the specified sche
         # ORGANIZER SUMMARY
         # -------------------------------------------------------------
         elif "Organizer Summary" in intents:
+            vols = context.get("volunteers", {})
+            sus = context.get("sustainability", {})
             res = {
-                "summary": "MatchOps AI Organizer Briefing: Overall operations are stable. 210 volunteers on shift. Stadium solar energy offset is at 36.2%. Parking Lot B is recommended.",
+                "summary": f"MatchOps AI Organizer Briefing: Overall operations are stable. {vols.get('on_shift', 210)} volunteers on shift. Stadium solar energy offset is at {sus.get('energy_offset_percent', 36.2)}%. Parking Lot B is recommended.",
                 "recommendations": [
                     {
                         "action": "Review Sustainability KPI",
-                        "detail": "Waste diversion rate is 84.6% today.",
+                        "detail": f"Waste diversion rate is {sus.get('waste_diverted_percent', 84.6)}% today.",
                         "priority": "Low",
-                        "supporting_data": ["Waste diverted: 84.6%"],
+                        "supporting_data": [f"Waste diverted: {sus.get('waste_diverted_percent', 84.6)}%"],
                         "assumptions": [],
                         "suggested_actions": ["View sustainability reports"],
                         "warnings": [],
@@ -792,6 +827,62 @@ Generate the structured JSON response in {language} following the specified sche
                 "missing_information": missing_info,
                 "warnings": [],
                 "next_actions": ["Export executive report PDF"]
+            }
+
+        # -------------------------------------------------------------
+        # SUSTAINABILITY
+        # -------------------------------------------------------------
+        elif "Sustainability" in intents:
+            sus = context.get("sustainability", {})
+            water = sus.get("water_used_gallons", 5200)
+            waste = sus.get("waste_diverted_percent", 88.0)
+            carbon = sus.get("carbon_saved_tons", 2.1)
+            solar = sus.get("solar_energy_generated_kwh", 410)
+            offset = sus.get("energy_offset_percent", 45.0)
+            res = {
+                "summary": f"Sustainability Metrics: Water consumed is {water} gallons. Waste diversion rate is at {waste}%. Solar arrays have generated {solar} kWh (grid offset {offset}%). Carbon emissions offset: {carbon} tons.",
+                "recommendations": [
+                    {
+                        "action": "Optimize Solar Intake",
+                        "detail": f"Maximize solar charging during peak sunlight. Current offset: {offset}%.",
+                        "priority": "Low",
+                        "supporting_data": [f"Solar generated: {solar} kWh", f"Offset rate: {offset}%"],
+                        "assumptions": ["Solar panels operating at 100% capacity"],
+                        "suggested_actions": ["Monitor panel status in organizer dashboard"],
+                        "warnings": [],
+                        "confidence_score": score
+                    }
+                ],
+                "priority": "Low",
+                "confidence_reason": score_reason,
+                "missing_information": missing_info,
+                "warnings": [],
+                "next_actions": ["Review waste metrics", "Export sustainability report"]
+            }
+
+        # -------------------------------------------------------------
+        # LOST & FOUND
+        # -------------------------------------------------------------
+        elif "Lost & Found" in intents:
+            res = {
+                "summary": "Lost & Found Services: The main stadium Lost & Found center is located at the Guest Services Booth near Section 124 (Level 1 Concourse). Additional Guest Services desks are active at Sections 149, 227, and 318.",
+                "recommendations": [
+                    {
+                        "action": "Report Lost Item near Section 124",
+                        "detail": "Proceed to the main Guest Services Booth near Section 124 to report or claim lost items.",
+                        "priority": "Medium",
+                        "supporting_data": ["Section 124 main desk is open"],
+                        "assumptions": ["Desk is staffed until 1 hour post-match"],
+                        "suggested_actions": ["Visit Section 124 desk"],
+                        "warnings": [],
+                        "confidence_score": score
+                    }
+                ],
+                "priority": "Medium",
+                "confidence_reason": score_reason,
+                "missing_information": missing_info,
+                "warnings": [],
+                "next_actions": ["Visit Section 124 desk", "File a lost item request"]
             }
 
         # Apply simple translations based on the selected language
