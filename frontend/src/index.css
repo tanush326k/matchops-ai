@@ -104,7 +104,6 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.15s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 
 body {
@@ -117,92 +116,91 @@ body {
 }
 
 /* Keyboard Accessible Focus Indicator */
-.focus-ring:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 4px;
-  box-shadow: 0 0 0 4px var(--primary-glow);
+@layer base {
+  :root {
+    --bg-base: #020617;
+    --card-bg: rgba(15, 23, 42, 0.45);
+    --card-solid: #0f172a;
+    --border-light: rgba(255, 255, 255, 0.05);
+    --border-glow: rgba(59, 130, 246, 0.15);
+  }
+
+  body {
+    background-color: var(--bg-base);
+    color: #f8fafc;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-image: 
+      radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+    background-attachment: fixed;
+  }
 }
 
-/* Luxury Glassmorphism Styling */
-.glass {
-  background: var(--bg-card);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid var(--border-color);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.15);
-}
+@layer components {
+  .glass {
+    @apply bg-slate-900/40 backdrop-blur-xl border border-white/5;
+  }
+  
+  .glow-card {
+    position: relative;
+  }
+  
+  .glow-card::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    background: linear-gradient(to bottom right, var(--border-glow), transparent, transparent);
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
 
-.glass-solid {
-  background: var(--bg-card-solid);
-  border: 1px solid var(--border-color);
-}
+  .glow-card:hover::before {
+    opacity: 1;
+  }
 
-.glass-hover:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--border-color-glow);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
-  transform: translateY(-2px);
-}
-
-.glow-card {
-  position: relative;
-  overflow: hidden;
-}
-
-.glow-card::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.05), transparent 60%);
-  pointer-events: none;
-}
-
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 99px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.18);
-}
-
-/* Entry Transitions */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-slate-800 rounded-full;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-700;
+  }
 }
 
 @keyframes pulse-ring {
-  0% { transform: scale(0.95); opacity: 0.4; }
-  50% { transform: scale(1.15); opacity: 0.7; }
-  100% { transform: scale(0.95); opacity: 0.4; }
+  0% { transform: scale(0.8); opacity: 0.5; }
+  80%, 100% { transform: scale(2.5); opacity: 0; }
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.animate-slide-up {
-  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-pulse-ring {
-  animation: pulse-ring 2.5s infinite ease-in-out;
+  animation: pulse-ring 2.5s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out forwards;
 }
 
 /* Proactive Alert Marquee Animation */
@@ -214,6 +212,7 @@ body {
 .animate-marquee {
   display: inline-block;
   animation: marquee 35s linear infinite;
+  will-change: transform;
 }
 
 .hover\:pause-marquee:hover {

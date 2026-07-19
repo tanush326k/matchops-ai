@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import { Send, Sparkles, AlertTriangle, CheckCircle, ArrowRight, Brain, User, Database, ShieldAlert, Cpu } from "lucide-react";
+import React, { useState, useCallback } from "react";
+import { Send, Sparkles, AlertTriangle, ArrowRight, Brain, User, Database, ShieldAlert, Cpu } from "lucide-react";
 import type { Role, Language, AIResponse } from "../types";
+import { InsightCard } from "./ui/InsightCard";
 
 interface CopilotPanelProps {
   role: Role;
@@ -11,7 +12,7 @@ interface CopilotPanelProps {
   activeResponse: AIResponse | null;
 }
 
-export const CopilotPanel: React.FC<CopilotPanelProps> = ({
+export const CopilotPanel = React.memo<CopilotPanelProps>(({
   role,
   language,
   selectedGate,
@@ -24,8 +25,8 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
   const [showReasoning, setShowReasoning] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Quick suggestions based on role
-  const getSuggestions = () => {
+  // Memoized quick suggestions based on role and accessibilityMode
+  const suggestions = React.useMemo(() => {
     switch (role) {
       case "Fan":
         return [
@@ -58,18 +59,18 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
       default:
         return [];
     }
-  };
+  }, [role, accessibilityMode]);
 
-  const getOrCreateSessionId = () => {
+  const getOrCreateSessionId = useCallback(() => {
     let sid = sessionStorage.getItem("matchops_session_id");
     if (!sid) {
       sid = "session_" + Math.random().toString(36).substring(2, 11) + "_" + Date.now();
       sessionStorage.setItem("matchops_session_id", sid);
     }
     return sid;
-  };
+  }, []);
 
-  const handleSend = async (textToSend: string) => {
+  const handleSend = useCallback(async (textToSend: string) => {
     if (!textToSend.trim()) return;
     setLoading(true);
     setError(null);
@@ -92,12 +93,12 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
       } else {
         setError("The MatchOps AI service is temporarily overloaded or rate limited. System is operating under local safety protocols. Please retry in a few seconds.");
       }
-    } catch (err) {
+    } catch {
       setError("Network connection failure. Verify that your MatchOps API server is running on port 8000.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [role, language, selectedGate, accessibilityMode, getOrCreateSessionId, onQueryProcessed]);
 
   return (
     <div className="flex flex-col gap-6 h-full font-sans">
@@ -136,7 +137,7 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={`Ask the copilot... (e.g. "${getSuggestions()[0]}")`}
+              placeholder={`Ask the copilot... (e.g. "${suggestions[0] || ''}")`}
               className="w-full pl-4 pr-10 py-3.5 bg-slate-950 border border-white/10 rounded-2xl focus:outline-none focus:border-blue-500/80 text-white text-xs placeholder-slate-600 transition-all font-medium font-sans"
               disabled={loading}
             />
@@ -157,7 +158,7 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
 
         {/* Suggestion tags */}
         <div className="flex flex-wrap gap-2">
-          {getSuggestions().map((s, idx) => (
+          {suggestions.map((s, idx) => (
             <button
               key={idx}
               type="button"
@@ -424,92 +425,18 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
             <div className="space-y-4">
               <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono">AI Actionable Recommendations</h4>
               <div className="flex flex-col gap-4">
-                {activeResponse.recommendations.map((rec, idx) => {
-                  const borderAccent = rec.priority === "High" 
-                    ? "border-l-4 border-l-red-500 bg-red-500/[0.01]" 
-                    : (rec.priority === "Medium" ? "border-l-4 border-l-amber-500 bg-amber-500/[0.01]" : "border-l-4 border-l-emerald-500 bg-emerald-500/[0.01]");
-                  
-                  return (
-                    <div 
-                      key={idx} 
-                      className={`p-4.5 border border-white/5 rounded-r-2xl ${borderAccent} hover:border-white/10 transition-all flex flex-col gap-4 shadow-sm`}
-                    >
-                      {/* Summary Title & Priority */}
-                      <div className="flex justify-between items-start gap-3">
-                        <h5 className="font-extrabold text-white text-xs sm:text-sm flex items-center gap-2 leading-snug font-display">
-                          <CheckCircle className="w-4.5 h-4.5 text-blue-400 shrink-0" />
-                          {rec.action}
-                        </h5>
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 font-mono border ${
-                          rec.priority === "High"
-                            ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                            : rec.priority === "Medium"
-                            ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                            : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                        }`}>
-                          {rec.priority}
-                        </span>
-                      </div>
-
-                      {/* Reasoning Analysis */}
-                      <div className="text-[11.5px] text-slate-300 leading-relaxed bg-slate-950/80 p-3.5 rounded-2xl border border-white/5 flex flex-col gap-3.5 font-semibold">
-                        <div>
-                          <strong className="text-slate-500 block text-[9.5px] uppercase tracking-widest mb-1.5 font-mono">Reasoning Analysis</strong>
-                          <p className="font-medium text-slate-300 leading-relaxed">{rec.detail}</p>
-                        </div>
-                        
-                        {/* Supporting Data */}
-                        {rec.supporting_data && rec.supporting_data.length > 0 && (
-                          <div className="border-t border-white/5 pt-3.5">
-                            <strong className="text-slate-500 block text-[9.5px] uppercase tracking-widest mb-1.5 font-mono">Supporting Data</strong>
-                            <ul className="list-disc pl-4 text-[10.5px] text-slate-300 space-y-1 font-medium">
-                              {rec.supporting_data.map((sd, i) => (
-                                <li key={i}>{sd}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {/* Assumptions */}
-                        {rec.assumptions && rec.assumptions.length > 0 && (
-                          <div className="border-t border-white/5 pt-3.5">
-                            <strong className="text-slate-500 block text-[9.5px] uppercase tracking-widest mb-1.5 font-mono">Operational Assumptions</strong>
-                            <ul className="list-disc pl-4 text-[10.5px] text-slate-300 space-y-1 font-medium">
-                              {rec.assumptions.map((asm, i) => (
-                                <li key={i}>{asm}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {/* Suggested Actions */}
-                        {rec.suggested_actions && rec.suggested_actions.length > 0 && (
-                          <div className="border-t border-white/5 pt-3.5">
-                            <strong className="text-slate-500 block text-[9.5px] uppercase tracking-widest mb-1.5 font-mono">Suggested Action Checklist</strong>
-                            <ul className="list-decimal pl-4 text-[10.5px] text-slate-300 space-y-1.5 font-medium">
-                              {rec.suggested_actions.map((act, i) => (
-                                <li key={i}>{act}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Card Footer: Confidence & Next Step */}
-                      <div className="flex justify-between items-center text-[10.5px] border-t border-white/5 pt-3.5">
-                        <span className="text-slate-400 font-medium font-mono text-[10px]">
-                          Confidence Index: <strong className="text-white">{(rec.confidence_score ? rec.confidence_score * 100 : activeResponse.confidence * 100).toFixed(0)}%</strong>
-                        </span>
-                        {activeResponse.next_actions[idx] && (
-                          <span className="text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1 cursor-pointer font-display text-[11px]">
-                            Next Step: {activeResponse.next_actions[idx]}
-                            <ArrowRight className="w-3.5 h-3.5 animate-pulse" />
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                {activeResponse.recommendations.map((rec, idx) => (
+                  <InsightCard
+                    key={idx}
+                    title={rec.action}
+                    description={rec.detail}
+                    priority={rec.priority as any}
+                    confidence={rec.confidence_score ? Math.round(rec.confidence_score * 100) : Math.round(activeResponse.confidence * 100)}
+                    reasoning={rec.supporting_data?.join(" | ") || rec.assumptions?.join(" | ")}
+                    actionLabel={activeResponse.next_actions[idx] ? `Next: ${activeResponse.next_actions[idx]}` : undefined}
+                    onActionClick={() => {}}
+                  />
+                ))}
               </div>
             </div>
 
@@ -532,4 +459,4 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
       )}
     </div>
   );
-};
+});

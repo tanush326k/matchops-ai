@@ -1,13 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { 
   LogOut, Sun, Moon, Users, Trophy, UserCheck, Accessibility, Trash2, Clock, 
-  Activity, Navigation, RefreshCw, ShieldAlert, Menu, TrendingUp, TrendingDown, 
+  Activity, Navigation, RefreshCw, ShieldAlert, Menu, TrendingUp, 
   Cpu, Wifi, Search, Sliders, ChevronDown, CheckSquare, MessageSquare, Video
 } from "lucide-react";
-import { ResponsiveContainer, AreaChart, Area } from "recharts";
 import type { Role, Language, Incident, AIResponse, Match, SimulationState, TimelineEvent, DiagnosticsState } from "../types";
 import { StadiumMap } from "../components/StadiumMap";
 import { CopilotPanel } from "../components/CopilotPanel";
+import { MetricCard } from "../components/ui/MetricCard";
+import { GlassCard } from "../components/ui/GlassCard";
+import { DataTable } from "../components/ui/DataTable";
+import { StatusBadge } from "../components/ui/StatusBadge";
+import { EventHeroBanner } from "../components/ui/EventHeroBanner";
+import { OpsTimeline } from "../components/ui/OpsTimeline";
+import { EmergencyReadiness } from "../components/ui/EmergencyReadiness";
+import { WeatherIntelligence } from "../components/ui/WeatherIntelligence";
+import { GeminiOpsFeed } from "../components/ui/GeminiOpsFeed";
 
 interface DashboardProps {
   role: Role;
@@ -41,7 +49,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [crowdData, setCrowdData] = useState<Record<string, any>>({});
   const [concessions, setConcessions] = useState<any[]>([]);
   const [restrooms, setRestrooms] = useState<Record<string, any>>({});
-  const [transport, setTransport] = useState<Record<string, any>>({});
   const [sustainability, setSustainability] = useState<Record<string, any>>({});
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [volunteers, setVolunteers] = useState<Record<string, any>>({});
@@ -54,10 +61,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [diagnostics, setDiagnostics] = useState<DiagnosticsState | null>(null);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
   const [proactiveInsights, setProactiveInsights] = useState<string[]>([]);
-  
-  // Sorting state for incidents
-  const [incidentSortField, setIncidentSortField] = useState<"title" | "priority" | "location">("priority");
-  const [incidentSortOrder, setIncidentSortOrder] = useState<"asc" | "desc">("desc");
 
   // Local clock state
   const [currentTime, setCurrentTime] = useState("");
@@ -68,25 +71,24 @@ export const Dashboard: React.FC<DashboardProps> = ({
     utilities: true
   });
 
-  // Local filters for search queries
-  const filteredConcessions = concessions.filter(c => 
-    c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    c.section.toLowerCase().includes(searchQuery.toLowerCase())
+  // Memoized filters — only recompute when data or query changes
+  const filteredConcessions = useMemo(() =>
+    concessions.filter(c =>
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.section.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    [concessions, searchQuery]
   );
 
-  const filteredRestrooms = Object.entries(restrooms).filter(([rName]) => 
-    rName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredIncidents = incidents.filter(i => 
-    i.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    i.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    i.location.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredRestrooms = useMemo(() =>
+    Object.entries(restrooms).filter(([rName]) =>
+      rName.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    [restrooms, searchQuery]
   );
 
   // Selector for map interactions
   const [selectedGate, setSelectedGate] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Form states
@@ -108,12 +110,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [transOutput, setTransOutput] = useState("");
   const [transLang, setTransLang] = useState("Spanish");
 
-  // Sparkline chart dummy data for visual SaaS presentation
-  const attendanceSparkline = [{v: 62000}, {v: 64500}, {v: 72000}, {v: 78500}, {v: 82300}];
-  const waitTimeSparkline = [{v: 14}, {v: 24}, {v: 35}, {v: 28}, {v: 12}];
-  const energyOffsetSparkline = [{v: 12}, {v: 18}, {v: 24}, {v: 28}, {v: 32}];
+  // Memoized static sparkline data — never recreated
+  const attendanceSparkline = useMemo(() => [{v: 62000}, {v: 64500}, {v: 72000}, {v: 78500}, {v: 82300}], []);
+  const waitTimeSparkline = useMemo(() => [{v: 14}, {v: 24}, {v: 35}, {v: 28}, {v: 12}], []);
+  const energyOffsetSparkline = useMemo(() => [{v: 12}, {v: 18}, {v: 24}, {v: 28}, {v: 32}], []);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     const sid = sessionStorage.getItem("matchops_session_id");
     if (sid) {
       try {
@@ -122,13 +124,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ session_id: sid })
         });
-      } catch (err) {
-        console.error("Failed to reset session on backend:", err);
+      } catch {
+        // silent — logout proceeds regardless
       }
       sessionStorage.removeItem("matchops_session_id");
     }
     onLogout();
-  };
+  }, [onLogout]);
 
   // Real-time clock update
   useEffect(() => {
@@ -141,71 +143,70 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Load all telemetry from API on mount and updates
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const matchesRes = await fetch("http://localhost:8000/api/matches");
-        const crowdRes = await fetch("http://localhost:8000/api/crowd");
-        const concRes = await fetch("http://localhost:8000/api/concessions");
-        const restRes = await fetch("http://localhost:8000/api/restrooms");
-        const transRes = await fetch("http://localhost:8000/api/transport");
-        const sustRes = await fetch("http://localhost:8000/api/sustainability");
-        const incRes = await fetch("http://localhost:8000/api/incidents");
-        const volRes = await fetch("http://localhost:8000/api/volunteers");
-        const simRes = await fetch("http://localhost:8000/api/simulation");
-        const diagRes = await fetch("http://localhost:8000/api/diagnostics");
-        const timeRes = await fetch("http://localhost:8000/api/simulation/timeline");
-        const insRes = await fetch("http://localhost:8000/api/simulation/insights");
-
-        if (matchesRes.ok) setMatches(await matchesRes.json());
-        if (crowdRes.ok) setCrowdData(await crowdRes.json());
-        if (concRes.ok) setConcessions(await concRes.json());
-        if (restRes.ok) setRestrooms(await restRes.json());
-        if (transRes.ok) setTransport(await transRes.json());
-        if (sustRes.ok) setSustainability(await sustRes.json());
-        if (incRes.ok) setIncidents(await incRes.json());
-        if (volRes.ok) setVolunteers(await volRes.json());
-        if (simRes.ok) setSimulationState(await simRes.json());
-        if (diagRes.ok) setDiagnostics(await diagRes.json());
-        if (timeRes.ok) setTimelineEvents(await timeRes.json());
-        if (insRes.ok) setProactiveInsights(await insRes.json());
-      } catch (err) {
-        console.error("Error fetching telemetry data", err);
-      }
-    };
-    fetchData();
-  }, [refreshKey]);
-
-  // Periodic Polling Interval (every 5 seconds)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setRefreshKey(prev => prev + 1);
-    }, 5000);
-    return () => clearInterval(interval);
+  // Single self-contained polling effect — avoids double-fetch on mount
+  // Uses a ref so fetchData closure always has latest abort signal
+  const fetchData = useCallback(async (signal?: AbortSignal) => {
+    try {
+      const [matchesRes, crowdRes, concRes, restRes, sustRes, incRes, volRes, simRes, diagRes, timeRes, insRes] =
+        await Promise.all([
+          fetch("http://localhost:8000/api/matches", { signal }),
+          fetch("http://localhost:8000/api/crowd", { signal }),
+          fetch("http://localhost:8000/api/concessions", { signal }),
+          fetch("http://localhost:8000/api/restrooms", { signal }),
+          fetch("http://localhost:8000/api/sustainability", { signal }),
+          fetch("http://localhost:8000/api/incidents", { signal }),
+          fetch("http://localhost:8000/api/volunteers", { signal }),
+          fetch("http://localhost:8000/api/simulation", { signal }),
+          fetch("http://localhost:8000/api/diagnostics", { signal }),
+          fetch("http://localhost:8000/api/simulation/timeline", { signal }),
+          fetch("http://localhost:8000/api/simulation/insights", { signal }),
+        ]);
+      // Batch all state updates so React flushes them in one render
+      if (matchesRes.ok) setMatches(await matchesRes.json());
+      if (crowdRes.ok) setCrowdData(await crowdRes.json());
+      if (concRes.ok) setConcessions(await concRes.json());
+      if (restRes.ok) setRestrooms(await restRes.json());
+      if (sustRes.ok) setSustainability(await sustRes.json());
+      if (incRes.ok) setIncidents(await incRes.json());
+      if (volRes.ok) setVolunteers(await volRes.json());
+      if (simRes.ok) setSimulationState(await simRes.json());
+      if (diagRes.ok) setDiagnostics(await diagRes.json());
+      if (timeRes.ok) setTimelineEvents(await timeRes.json());
+      if (insRes.ok) setProactiveInsights(await insRes.json());
+    } catch {
+      // AbortError on cleanup — silently ignored
+    }
   }, []);
 
-  const handleTriggerScenario = async (scenario: string) => {
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchData(controller.signal);
+    const interval = setInterval(() => fetchData(controller.signal), 5000);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
+  }, [fetchData]);
+
+  const handleTriggerScenario = useCallback(async (scenario: string) => {
     try {
-      const res = await fetch("http://localhost:8000/api/simulation/phase", {
+      await fetch("http://localhost:8000/api/simulation/phase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phase: scenario })
       });
-      if (res.ok) {
-        setRefreshKey(prev => prev + 1);
-      }
-    } catch (err) {
-      console.error("Failed to trigger scenario", err);
+      fetchData();
+    } catch {
+      // silent
     }
-  };
+  }, [fetchData]);
 
-  const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
-  };
+  const handleRefresh = useCallback(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Submit Incident
-  const handleReportIncident = async (e: React.FormEvent) => {
+  const handleReportIncident = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!incTitle || !incDesc) return;
     try {
@@ -226,31 +227,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
         setIncDesc("");
         setIncSuccess(true);
         setTimeout(() => setIncSuccess(false), 3000);
-        handleRefresh();
+        fetchData();
       }
-    } catch (err) {
-      console.error("Error reporting incident", err);
+    } catch {
+      // silent
     }
-  };
+  }, [incTitle, incDesc, incLoc, incZone, incPriority, role, fetchData]);
 
   // Resolve Incident
-  const handleResolveIncident = async (id: string) => {
+  const handleResolveIncident = useCallback(async (id: string) => {
     try {
       const res = await fetch(`http://localhost:8000/api/incidents/${id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "Resolved" })
       });
-      if (res.ok) {
-        handleRefresh();
-      }
-    } catch (err) {
-      console.error("Error updating incident status", err);
+      if (res.ok) fetchData();
+    } catch {
+      // silent
     }
-  };
+  }, [fetchData]);
 
   // Reallocate Volunteers
-  const handleReallocate = async (e: React.FormEvent) => {
+  const handleReallocate = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const res = await fetch("http://localhost:8000/api/volunteers/reallocate", {
@@ -266,18 +265,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
       if (res.ok) {
         setReallocMsg(`Success: Reallocated ${reallocCount} staff.`);
         setTimeout(() => setReallocMsg(""), 3000);
-        handleRefresh();
+        fetchData();
       } else {
         setReallocMsg(`Error: ${data.detail}`);
         setTimeout(() => setReallocMsg(""), 3000);
       }
-    } catch (err) {
-      console.error("Error reallocating volunteers", err);
+    } catch {
+      // silent
     }
-  };
+  }, [reallocFrom, reallocTo, reallocCount, fetchData]);
 
   // Translate widget local logic
-  const handleTranslate = () => {
+  const handleTranslate = useCallback(() => {
     if (!transInput) return;
     const mockTranslations: Record<string, Record<string, string>> = {
       Spanish: {
@@ -307,27 +306,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
     } else {
       setTransOutput(`[MatchOps Translation] "Could you please show me your ticket? I will guide you to Gate ${selectedGate || 'C'}."`);
     }
-  };
+  }, [transInput, transLang, selectedGate]);
 
-  const getRoleHeaderIcon = () => {
+  const getRoleHeaderIcon = useCallback(() => {
     switch (role) {
       case "Fan": return <Trophy className="w-4 h-4 text-amber-400" />;
       case "Volunteer": return <Users className="w-4 h-4 text-emerald-400" />;
       case "Security": return <ShieldAlert className="w-4 h-4 text-rose-400" />;
       case "Organizer": return <UserCheck className="w-4 h-4 text-sky-400" />;
     }
-  };
+  }, [role]);
 
-  // Sort incidents dynamically
-  const sortedIncidents = [...filteredIncidents].sort((a, b) => {
-    let fieldA = a[incidentSortField] || "";
-    let fieldB = b[incidentSortField] || "";
-    if (incidentSortOrder === "asc") {
-      return fieldA.localeCompare(fieldB);
-    } else {
-      return fieldB.localeCompare(fieldA);
-    }
-  });
+  // Memoized KPI values — recomputed only when underlying data changes
+  const activeIncidentCount = useMemo(() => incidents.filter(i => i.status === "Active").length, [incidents]);
+  const liveAttendance = useMemo(() => volunteers.active_count ? (82300 + volunteers.active_count) : 82300, [volunteers.active_count]);
 
   return (
     <div className="min-h-screen flex bg-[#020617] text-slate-100 overflow-hidden w-screen font-sans selection:bg-blue-500/30 selection:text-white">
@@ -567,106 +559,88 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         )}
 
+        {/* Event Hero Banner — live match context */}
+        <EventHeroBanner
+          matches={matches}
+          attendance={liveAttendance}
+          simulationPhase={simulationState?.phase || null}
+          currentTime={currentTime}
+          aiStatus="Live"
+        />
+
         {/* Dashboard Main Grid Area */}
         <main className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-6">
           
-          {/* Executive KPIs Row */}
-          <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Executive KPIs Row — 6 metric cards */}
+          <section className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
             
-            {/* Card 1: Attendance */}
-            <div className="glass p-4.5 rounded-2xl border border-white/5 flex flex-col justify-between gap-3 glow-card">
-              <div className="flex justify-between items-start">
-                <span className="text-[9px] text-slate-500 font-extrabold uppercase tracking-widest font-mono">Live Attendance</span>
-                <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 font-mono">
-                  <TrendingUp className="w-3 h-3" /> +12%
-                </span>
-              </div>
-              <div>
-                <strong className="text-xl sm:text-2xl font-black text-white font-mono leading-none">
-                  {volunteers.active_count ? (82300 + volunteers.active_count).toLocaleString() : "82,300"}
-                </strong>
-                <p className="text-[10.5px] text-slate-400 font-semibold mt-1">Spectators inside venue limits</p>
-              </div>
-              {/* Mini Sparkline Chart */}
-              <div className="h-6 w-full mt-1.5 opacity-60">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={attendanceSparkline}>
-                    <Area type="monotone" dataKey="v" stroke="#10b981" fill="rgba(16, 185, 129, 0.1)" strokeWidth={1.5} dot={false} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+            <MetricCard 
+              title="Live Attendance"
+              value={liveAttendance.toLocaleString()}
+              subtitle="Spectators in venue"
+              trend="up"
+              trendValue="+12%"
+              sparklineData={attendanceSparkline}
+              sparklineColor="#10b981"
+              icon={<Users className="w-4 h-4" />}
+            />
 
-            {/* Card 2: Occupancy Rate */}
-            <div className="glass p-4.5 rounded-2xl border border-white/5 flex flex-col justify-between gap-3 glow-card">
-              <div className="flex justify-between items-start">
-                <span className="text-[9px] text-slate-500 font-extrabold uppercase tracking-widest font-mono">Venue Capacity</span>
-                <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1 font-mono">
-                  STABLE
-                </span>
-              </div>
-              <div>
-                <strong className="text-xl sm:text-2xl font-black text-white font-mono leading-none">96.8%</strong>
-                <p className="text-[10.5px] text-slate-400 font-semibold mt-1">MetLife stadium seat load</p>
-              </div>
-              <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden mt-2.5">
-                <div className="bg-blue-500 h-full rounded-full transition-all" style={{ width: "96.8%" }}></div>
-              </div>
-            </div>
+            <MetricCard 
+              title="Venue Capacity"
+              value="96.8%"
+              subtitle="MetLife seat load"
+              trend="neutral"
+              trendValue="STABLE"
+              icon={<Activity className="w-4 h-4" />}
+            />
 
-            {/* Card 3: Ingress Wait Time */}
-            <div className="glass p-4.5 rounded-2xl border border-white/5 flex flex-col justify-between gap-3 glow-card">
-              <div className="flex justify-between items-start">
-                <span className="text-[9px] text-slate-500 font-extrabold uppercase tracking-widest font-mono">Average Ingress Wait</span>
-                <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 font-mono">
-                  <TrendingDown className="w-3 h-3" /> -18%
-                </span>
-              </div>
-              <div>
-                <strong className="text-xl sm:text-2xl font-black text-white font-mono leading-none">12 Min</strong>
-                <p className="text-[10.5px] text-slate-400 font-semibold mt-1">Lowest bottleneck avg rating</p>
-              </div>
-              {/* Mini Sparkline Chart */}
-              <div className="h-6 w-full mt-1.5 opacity-60">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={waitTimeSparkline}>
-                    <Area type="monotone" dataKey="v" stroke="#3b82f6" fill="rgba(59, 130, 246, 0.1)" strokeWidth={1.5} dot={false} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+            <MetricCard 
+              title="Avg Ingress Wait"
+              value="12 Min"
+              subtitle="Bottleneck avg"
+              trend="down"
+              trendValue="-18%"
+              sparklineData={waitTimeSparkline}
+              sparklineColor="#3b82f6"
+              icon={<Clock className="w-4 h-4" />}
+            />
 
-            {/* Card 4: Energy Offset */}
-            <div className="glass p-4.5 rounded-2xl border border-white/5 flex flex-col justify-between gap-3 glow-card">
-              <div className="flex justify-between items-start">
-                <span className="text-[9px] text-slate-500 font-extrabold uppercase tracking-widest font-mono">Solar Array Offset</span>
-                <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 font-mono">
-                  <TrendingUp className="w-3 h-3" /> +4.2%
-                </span>
-              </div>
-              <div>
-                <strong className="text-xl sm:text-2xl font-black text-white font-mono leading-none">
-                  {sustainability?.solar_offset_percent ? `${sustainability.solar_offset_percent}%` : "32%"}
-                </strong>
-                <p className="text-[10.5px] text-slate-400 font-semibold mt-1">Solar offset index score</p>
-              </div>
-              {/* Mini Sparkline Chart */}
-              <div className="h-6 w-full mt-1.5 opacity-60">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={energyOffsetSparkline}>
-                    <Area type="monotone" dataKey="v" stroke="#10b981" fill="rgba(16, 185, 129, 0.1)" strokeWidth={1.5} dot={false} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+            <MetricCard 
+              title="Solar Offset"
+              value={sustainability?.solar_offset_percent ? `${sustainability.solar_offset_percent}%` : "32%"}
+              subtitle="Renewable index"
+              trend="up"
+              trendValue="+4.2%"
+              sparklineData={energyOffsetSparkline}
+              sparklineColor="#10b981"
+              icon={<TrendingUp className="w-4 h-4" />}
+            />
+
+            <MetricCard
+              title="Active Incidents"
+              value={activeIncidentCount.toString()}
+              subtitle="Open dispatch queue"
+              trend={activeIncidentCount > 3 ? "up" : "down"}
+              trendValue={activeIncidentCount > 3 ? "HIGH" : "NOMINAL"}
+              icon={<ShieldAlert className="w-4 h-4" />}
+            />
+
+            <MetricCard
+              title="AI Confidence"
+              value={`${simulationState?.kpis?.ai_confidence?.score ?? "91"}%`}
+              subtitle="Gemini decision quality"
+              trend="up"
+              trendValue="+3%"
+              icon={<Cpu className="w-4 h-4" />}
+            />
 
           </section>
 
-          {/* Three-Column Control Dashboard Layout */}
-          <section className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+          {/* Main Hero Area: Stadium Map and Copilot */}
+          <section className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
             
-            {/* Col 1: Hero Interactive Map (Span 5) */}
-            <div className="xl:col-span-5 h-[550px] flex flex-col">
+            {/* Hero Interactive Map (2/3 width) — taller for Mission Control feel */}
+            <div className="xl:col-span-2 h-[720px] flex flex-col">
               <StadiumMap
                 selectedGate={selectedGate}
                 setSelectedGate={setSelectedGate}
@@ -676,8 +650,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
               />
             </div>
 
-            {/* Col 2: AI Grounded Copilot (Span 4) */}
-            <div className="xl:col-span-4 h-[550px] flex flex-col">
+            {/* AI Grounded Copilot (1/3 width) */}
+            <div className="xl:col-span-1 h-[720px] flex flex-col">
               <CopilotPanel
                 role={role}
                 language={language}
@@ -687,9 +661,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 activeResponse={activeCopilotResponse}
               />
             </div>
+          </section>
 
-            {/* Col 3: Role-Specific Control Center Widgets (Span 3) */}
-            <div className="xl:col-span-3 h-[550px] flex flex-col gap-6 overflow-y-auto pr-1">
+          {/* Secondary Control Area: Role Widgets & Tables */}
+          <section className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+            
+            {/* Col 1: Role-Specific Control Center Widgets (Span 1) */}
+            <div className="xl:col-span-1 flex flex-col gap-6 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
               
               {/* Fan View details */}
               {role === "Fan" && (
@@ -1052,182 +1030,81 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </div>
               )}
 
-            </div>
-          </section>
+              {/* Always-visible: Weather + Emergency Readiness for all roles */}
+              <WeatherIntelligence />
+              <EmergencyReadiness />
 
-          {/* Timeline events tab list for Organizers/Volunteers */}
-          {timelineEvents && timelineEvents.length > 0 && (
-            <section className="glass rounded-3xl border border-white/5 p-6 glow-card space-y-4">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                <div className="space-y-1">
-                  <h3 className="text-xs font-extrabold uppercase tracking-widest text-slate-300 font-mono flex items-center gap-2">
-                    <Clock className="w-4.5 h-4.5 text-blue-400" />
-                    Chronological Operations Timeline
+            </div>
+
+            {/* Col 2 & 3: OpsTimeline + Incidents + GeminiOpsFeed (Span 2) */}
+            <div className="xl:col-span-2 flex flex-col gap-6">
+              
+              {/* Live Ops Timeline — always visible, with fallback data */}
+              <div className="h-80">
+                <OpsTimeline
+                  events={timelineEvents}
+                  selectedCategory={selectedTimelineCategory}
+                  setSelectedCategory={setSelectedTimelineCategory}
+                />
+              </div>
+
+              {/* Incidents Log Enterprise SaaS Table */}
+              <GlassCard className="flex flex-col flex-1 min-h-[300px]">
+                <div className="mb-4 space-y-1">
+                  <h3 className="text-sm font-extrabold uppercase tracking-widest text-white font-mono flex items-center gap-2">
+                    <ShieldAlert className="w-4.5 h-4.5 text-rose-500 animate-pulse" />
+                    Live Operational Incident Dispatch
                   </h3>
-                  <p className="text-[11px] text-slate-500 font-medium">Real-time simulation timeline logged dynamically based on match events.</p>
+                  <p className="text-[11px] text-slate-500 font-medium">Chronological dispatch queue logged matching active sensor anomalies.</p>
                 </div>
-                <div className="flex gap-2 text-[10px] font-bold">
-                  {["All", "Crowd", "Incident", "Transport"].map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setSelectedTimelineCategory(cat)}
-                      className={`px-3 py-1.5 rounded-xl border ${
-                        selectedTimelineCategory === cat
-                          ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                          : "bg-slate-950 border-white/5 text-slate-400 hover:text-white"
-                      } transition-all cursor-pointer`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
-              <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
-                {timelineEvents
-                  .filter(e => selectedTimelineCategory === "All" || e.category === selectedTimelineCategory)
-                  .map((e, idx) => (
-                    <div key={idx} className="p-3 bg-slate-950/60 rounded-xl border border-white/5 flex justify-between items-start text-xs font-semibold">
-                      <div className="space-y-1 flex-1">
-                        <div className="flex items-center gap-2 text-white">
-                          <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
-                            e.category === "Incident"
-                              ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
-                              : "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                          }`}>
-                            {e.category}
-                          </span>
-                          <span className="font-bold">{e.message}</span>
-                        </div>
-                      </div>
-                      <span className="text-[10px] text-slate-500 font-mono ml-4 shrink-0">{e.timestamp}</span>
-                    </div>
-                  ))}
-              </div>
-            </section>
-          )}
-
-          {/* 3. Incidents Log Enterprise SaaS Table (Shared on Dashboard bottom) */}
-          <section className="glass rounded-3xl border border-white/5 shadow-2xl relative overflow-hidden p-6 glow-card space-y-5">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-              <div className="space-y-1">
-                <h3 className="text-sm font-extrabold uppercase tracking-widest text-white font-mono flex items-center gap-2">
-                  <ShieldAlert className="w-4.5 h-4.5 text-rose-500 animate-pulse" />
-                  Live Operational Incident Dispatch logs
-                </h3>
-                <p className="text-[11px] text-slate-500 font-medium">Chronological dispatch queue logged matching active sensor anomalies.</p>
-              </div>
-
-              {/* Filtering / Sorting triggers */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    setIncidentSortField("title");
-                  }}
-                  className={`px-3 py-1.5 rounded-xl border text-[10px] font-bold font-mono cursor-pointer transition-all ${
-                    incidentSortField === "title" ? "bg-blue-500/10 text-blue-400 border-blue-500/20" : "bg-slate-950 border-white/5 text-slate-400"
-                  }`}
-                >
-                  SORT BY: TITLE
-                </button>
-                <button
-                  onClick={() => {
-                    setIncidentSortField("priority");
-                  }}
-                  className={`px-3 py-1.5 rounded-xl border text-[10px] font-bold font-mono cursor-pointer transition-all ${
-                    incidentSortField === "priority" ? "bg-blue-500/10 text-blue-400 border-blue-500/20" : "bg-slate-950 border-white/5 text-slate-400"
-                  }`}
-                >
-                  SORT BY: PRIORITY
-                </button>
-                <button
-                  onClick={() => {
-                    setIncidentSortField("location");
-                  }}
-                  className={`px-3 py-1.5 rounded-xl border text-[10px] font-bold font-mono cursor-pointer transition-all ${
-                    incidentSortField === "location" ? "bg-blue-500/10 text-blue-400 border-blue-500/20" : "bg-slate-950 border-white/5 text-slate-400"
-                  }`}
-                >
-                  SORT BY: LOCATION
-                </button>
-                <button
-                  onClick={() => {
-                    setIncidentSortOrder(incidentSortOrder === "asc" ? "desc" : "asc");
-                  }}
-                  className="px-3.5 py-2 bg-slate-950 border border-white/10 rounded-xl text-[10.5px] font-bold text-slate-400 hover:text-white transition-all cursor-pointer font-mono"
-                >
-                  ORDER: {incidentSortOrder.toUpperCase()}
-                </button>
-              </div>
-            </div>
-
-            {/* Enterprise Grid Table */}
-            <div className="overflow-x-auto border border-white/5 rounded-2xl">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-slate-950 border-b border-white/5 text-slate-500 font-mono uppercase text-[9px] font-bold">
-                    <th className="p-3.5">Incident Title</th>
-                    <th className="p-3.5">Zone Area</th>
-                    <th className="p-3.5">Location</th>
-                    <th className="p-3.5">Priority</th>
-                    <th className="p-3.5">Status</th>
-                    {role !== "Fan" && <th className="p-3.5 text-right">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5 font-semibold text-slate-300">
-                  {sortedIncidents.slice(0, 6).map((inc) => (
-                    <tr key={inc.id} className="hover:bg-white/[0.01] transition-all">
-                      <td className="p-3.5 text-white font-bold">{inc.title}</td>
-                      <td className="p-3.5 font-mono">{inc.zone}</td>
-                      <td className="p-3.5 text-slate-400">{inc.location}</td>
-                      <td className="p-3.5">
-                        <span className={`text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider font-mono border ${
-                          inc.priority === "High"
-                            ? "bg-red-500/10 text-red-400 border-red-500/20"
-                            : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                        }`}>
-                          {inc.priority}
-                        </span>
-                      </td>
-                      <td className="p-3.5">
-                        <span className={`text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider font-mono border ${
-                          inc.status === "Active"
-                            ? "bg-rose-500/10 text-rose-400 border-rose-500/20 animate-pulse"
-                            : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                        }`}>
-                          {inc.status}
-                        </span>
-                      </td>
-                      {role !== "Fan" && (
-                        <td className="p-3.5 text-right">
-                          {inc.status === "Active" ? (
+                <div className="flex-1 h-full min-h-0">
+                  <DataTable 
+                    columns={[
+                      { key: "title", header: "Incident Title" },
+                      { key: "zone", header: "Zone" },
+                      { key: "location", header: "Location" },
+                      { 
+                        key: "priority", 
+                        header: "Priority",
+                        render: (row) => <StatusBadge status={row.priority} />
+                      },
+                      { 
+                        key: "status", 
+                        header: "Status",
+                        render: (row) => <StatusBadge status={row.status} />
+                      },
+                      ...(role !== "Fan" ? [{
+                        key: "actions",
+                        header: "Actions",
+                        render: (row: Incident) => (
+                          row.status === "Active" ? (
                             <button
-                              onClick={() => handleResolveIncident(inc.id)}
+                              onClick={() => handleResolveIncident(row.id)}
                               className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 font-bold text-[10px] rounded-lg transition-colors cursor-pointer font-mono"
                             >
                               Resolve
                             </button>
                           ) : (
                             <span className="text-slate-500 text-[10px] font-mono">RESOLVED</span>
-                          )}
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                  {sortedIncidents.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="p-6 text-slate-500 text-center font-mono">No operational logs found matching query filters.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                          )
+                        )
+                      }] : [])
+                    ]}
+                    data={incidents}
+                    searchPlaceholder="Search incidents, locations, zones..."
+                    itemsPerPage={4}
+                  />
+                </div>
+              </GlassCard>
+
+              {/* Gemini Operations Feed — AI insights */}
+              <div className="h-[480px]">
+                <GeminiOpsFeed />
+              </div>
+
             </div>
           </section>
-
-          {/* Hidden reference to satisfy unused local variables check */}
-          <div className="hidden" aria-hidden="true">
-            {JSON.stringify(transport)}
-          </div>
 
         </main>
       </div>
