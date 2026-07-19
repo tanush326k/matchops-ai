@@ -356,6 +356,15 @@ matchops-ai/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
+│   │   │   ├── layout/               # Modularized layout components
+│   │   │   │   ├── Sidebar.tsx       # Sidebar navigation and controls
+│   │   │   │   └── DashboardHeader.tsx # Live clock, accessibility settings
+│   │   │   ├── widgets/              # Role-specific dashboard widget panels
+│   │   │   │   ├── RolePanel.tsx     # Role workspace panel factory
+│   │   │   │   ├── FanPanel.tsx      # Fan navigation & concessions widget
+│   │   │   │   ├── VolunteerPanel.tsx # Volunteer tasks and translations
+│   │   │   │   ├── SecurityPanel.tsx # Security incidents & readiness
+│   │   │   │   └── OrganizerPanel.tsx # Executive summary & scenario triggers
 │   │   │   ├── StadiumMap.tsx        # SVG stadium with 7-layer overlay system
 │   │   │   ├── CopilotPanel.tsx      # AI chat interface with reasoning pipeline display
 │   │   │   ├── Onboarding.tsx        # Role-specific interactive onboarding walkthrough
@@ -365,14 +374,20 @@ matchops-ai/
 │   │   │       ├── StatusBadge.tsx    # Color-coded status indicator
 │   │   │       ├── DataTable.tsx      # Sortable, searchable, paginated data table
 │   │   │       ├── InsightCard.tsx    # Expandable AI insight card
-│   │   │       ├── EventHeroBanner.tsx       # Live match context strip
-│   │   │       ├── OpsTimeline.tsx           # Filterable operations timeline
-│   │   │       ├── EmergencyReadiness.tsx    # Emergency response status widget
-│   │   │       ├── WeatherIntelligence.tsx   # Weather and operational impact widget
-│   │   │       └── GeminiOpsFeed.tsx         # AI insights feed with confidence bars
+│   │   │       ├── EventHeroBanner.tsx # Live match context strip
+│   │   │       ├── OpsTimeline.tsx    # Filterable operations timeline
+│   │   │       ├── EmergencyReadiness.tsx # Emergency response status widget
+│   │   │       ├── WeatherIntelligence.tsx # Weather and operational impact widget
+│   │   │       └── GeminiOpsFeed.tsx  # AI insights feed with confidence bars
+│   │   ├── hooks/                    # Reusable React hooks for modular state
+│   │   │   ├── useTelemetryData.ts    # Telemetry fetching, scenario trigger, and polling
+│   │   │   ├── useIncidentManager.ts  # Incident creation and resolution logic
+│   │   │   └── useVolunteerTranslator.ts # Real-time multilingual volunteer translation hook
+│   │   ├── config/
+│   │   │   └── api.ts                 # Dynamic API base URL resolver (Local vs Production)
 │   │   ├── pages/
 │   │   │   ├── LandingPage.tsx       # Role selector and language configurator
-│   │   │   └── Dashboard.tsx         # Main Mission Control orchestrator (1,114 lines)
+│   │   │   └── Dashboard.tsx         # Main Mission Control orchestrator
 │   │   ├── types/
 │   │   │   └── index.ts             # Shared TypeScript interfaces
 │   │   ├── App.tsx                   # Root — theme, accessibility, routing state
