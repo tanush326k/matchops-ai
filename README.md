@@ -54,7 +54,6 @@ matchops-ai/
 ├── backend/
 │   ├── ai/
 │   │   └── orchestrator.py    # Multi-stage AI Orchestrator & system prompting
-│   ├── api/
 │   ├── utils/
 │   │   └── database.py        # In-memory simulator database (FIFA 2026 telemetry)
 │   ├── models.py              # Pydantic schemas (Incident, AIResponse, etc.)
@@ -65,17 +64,22 @@ matchops-ai/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── StadiumMap.tsx     # SVG Stadium Map with heatmaps and beacons
-│   │   │   └── CopilotPanel.tsx   # Chat console & AI reasoning pipeline steps
+│   │   │   ├── CopilotPanel.tsx   # Chat console & AI reasoning pipeline steps
+│   │   │   └── Onboarding.tsx     # Interactive role-specific onboarding walkthrough
 │   │   ├── pages/
 │   │   │   ├── LandingPage.tsx    # Role Selector & Language configurator
 │   │   │   └── Dashboard.tsx      # Fan, Volunteer, Security, and Organizer UIs
 │   │   ├── types/
 │   │   │   └── index.ts           # Shared TypeScript models
 │   │   ├── App.tsx                # App state, theme toggles, and page routing
-│   │   ├── index.css              # Glassmorphism, animations, and CSS custom tokens
+│   │   ├── index.css              # Tailwind directives, glassmorphism, animations, and CSS tokens
 │   │   └── main.tsx
+│   ├── tailwind.config.js
+│   ├── postcss.config.js
 │   ├── index.html
 │   └── package.json
+├── Dockerfile                     # Multi-stage build for Google Cloud Run
+├── .dockerignore
 └── README.md
 ```
 
@@ -115,7 +119,7 @@ Verify the operational health check route at http://localhost:8000/api/health. I
 ```json
 {
   "status": "ok",
-  "version": "RC3",
+  "version": "Final",
   "simulation": true,
   "gemini_available": true,
   "fallback_available": true,
@@ -186,7 +190,7 @@ py -m unittest backend/tests/test_orchestrator.py
 
 ## 🌐 Production Deployment Guide
 
-### Backend & Frontend Combined (Vite Build + FastAPI Static Serves)
+### Option A: Local Production Build (Vite Build + FastAPI Static Serves)
 1. Build the production React assets inside the `frontend` folder:
    ```bash
    cd frontend
@@ -200,6 +204,24 @@ py -m unittest backend/tests/test_orchestrator.py
    py -m uvicorn backend.main:app --port 8000
    ```
    *FastAPI automatically mounts and serves files in `frontend/dist` at the root path (`/`). Access the entire production application at http://localhost:8000.*
+
+### Option B: Google Cloud Run Deployment
+A multi-stage `Dockerfile` is included in the repository root.
+
+1. **Build the container image:**
+   ```bash
+   gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/matchops-ai
+   ```
+2. **Deploy to Cloud Run:**
+   ```bash
+   gcloud run deploy matchops-ai \
+     --image gcr.io/YOUR_PROJECT_ID/matchops-ai \
+     --platform managed \
+     --region us-east1 \
+     --allow-unauthenticated \
+     --set-env-vars GEMINI_API_KEY=your_key_here
+   ```
+3. Cloud Run will automatically assign a public URL. The `PORT` environment variable is injected by Cloud Run.
 
 ---
 

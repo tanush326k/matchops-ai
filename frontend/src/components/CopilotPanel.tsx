@@ -100,12 +100,28 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-6 h-full">
+    <div className="flex flex-col gap-6 h-full font-sans">
       {/* Input Console */}
-      <div className="glass p-6 rounded-2xl glow-card">
-        <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="text-blue-400 w-5 h-5 animate-pulse" />
-          <h3 className="text-xl font-bold tracking-wide">MatchOps AI Copilot</h3>
+      <div className="glass p-6 rounded-3xl border border-white/5 shadow-2xl relative overflow-hidden glow-card">
+        {/* Dynamic AI Status Header */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-2xl shadow-sm shadow-blue-500/5">
+              <Sparkles className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold tracking-wide text-white font-display">MatchOps Copilot</h3>
+              <p className="text-[10px] text-slate-500 font-semibold font-mono uppercase tracking-wider">Grounding Pipeline v2</p>
+            </div>
+          </div>
+
+          {/* Connected state */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/5 border border-emerald-500/10 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest font-mono">
+              {loading ? "Processing" : (activeResponse ? "Ready" : "Awaiting Analysis")}
+            </span>
+          </div>
         </div>
 
         <form
@@ -113,25 +129,33 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
             e.preventDefault();
             handleSend(query);
           }}
-          className="flex gap-2 mb-4"
+          className="flex gap-2.5 mb-5"
         >
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={`Ask the copilot... (e.g. "${getSuggestions()[0]}")`}
-            className="flex-1 px-4 py-3 bg-black/50 border border-white/10 rounded-xl focus:outline-none focus:border-blue-500 text-white text-sm"
-            disabled={loading}
-          />
+          <div className="flex-1 relative flex items-center">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={`Ask the copilot... (e.g. "${getSuggestions()[0]}")`}
+              className="w-full pl-4 pr-10 py-3.5 bg-slate-950 border border-white/10 rounded-2xl focus:outline-none focus:border-blue-500/80 text-white text-xs placeholder-slate-600 transition-all font-medium font-sans"
+              disabled={loading}
+            />
+            <span className="absolute right-3 text-slate-600 select-none pointer-events-none text-[10px] font-mono font-bold tracking-widest hidden sm:inline">⌘K</span>
+          </div>
           <button
             type="submit"
             disabled={loading || !query.trim()}
-            className="px-5 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:text-gray-500 rounded-xl flex items-center justify-center transition-colors text-white"
+            className="px-4.5 py-3.5 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-900 disabled:text-slate-700 rounded-2xl flex items-center justify-center transition-all text-white focus-ring cursor-pointer shadow-md shadow-blue-600/10 shrink-0"
           >
-            {loading ? <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span> : <Send className="w-4 h-4" />}
+            {loading ? (
+              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
           </button>
         </form>
 
+        {/* Suggestion tags */}
         <div className="flex flex-wrap gap-2">
           {getSuggestions().map((s, idx) => (
             <button
@@ -141,7 +165,7 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
                 setQuery(s);
                 handleSend(s);
               }}
-              className="text-xs px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/15 border border-white/5 hover:border-white/15 text-gray-300 transition-all"
+              className="text-[10.5px] px-3.5 py-2.5 rounded-2xl bg-slate-950 border border-white/5 hover:border-blue-500/20 text-slate-400 hover:text-white hover:bg-slate-900 transition-all cursor-pointer font-medium"
             >
               {s}
             </button>
@@ -150,11 +174,11 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
       </div>
 
       {error && (
-        <div className="p-4 bg-red-950/40 border border-red-900/60 rounded-xl flex items-start gap-2.5 text-xs text-red-400">
-          <AlertTriangle className="text-red-400 w-4 h-4 shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <span className="font-semibold text-red-300 block mb-0.5">Operations Copilot Offline</span>
-            {error}
+        <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-start gap-3.5 text-xs text-red-400 animate-fade-in shadow-lg">
+          <AlertTriangle className="text-red-400 w-5 h-5 shrink-0 mt-0.5" />
+          <div className="flex-1 space-y-1 font-semibold">
+            <span className="font-bold text-red-300 block font-display uppercase tracking-wider text-[10px]">Operations Copilot Error</span>
+            <p className="text-red-300/80 leading-relaxed font-medium">{error}</p>
           </div>
         </div>
       )}
@@ -162,19 +186,19 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
       {/* Skeleton Loading Panel */}
       {loading && (
         <div className="flex-1 flex flex-col gap-6 overflow-y-auto pr-1">
-          <div className="glass p-5 rounded-2xl border-l-4 border-l-blue-500 animate-pulse flex flex-col gap-3">
+          <div className="glass p-5 rounded-2xl border-l-4 border-l-blue-500 animate-pulse flex flex-col gap-4">
             <div className="flex justify-between items-center">
               <div className="h-4 bg-white/10 rounded w-1/3"></div>
               <div className="h-6 bg-white/10 rounded-full w-16"></div>
             </div>
-            <div className="space-y-2 mt-2">
+            <div className="space-y-2.5 mt-2">
               <div className="h-3 bg-white/10 rounded w-full"></div>
               <div className="h-3 bg-white/10 rounded w-5/6"></div>
               <div className="h-3 bg-white/10 rounded w-2/3"></div>
             </div>
           </div>
           
-          <div className="glass p-6 rounded-2xl glow-card flex flex-col gap-5 animate-pulse">
+          <div className="glass p-6 rounded-2xl flex flex-col gap-5 animate-pulse">
             <div className="flex justify-between items-center">
               <div className="h-4 bg-white/10 rounded w-1/4"></div>
               <div className="h-4 bg-white/10 rounded w-1/6"></div>
@@ -200,31 +224,32 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
       {/* AI Processing and Output */}
       {activeResponse && !loading && (
         <div className="flex-1 flex flex-col gap-6 overflow-y-auto pr-1">
+          
           {/* Timeline Analysis Accordion */}
-          <div className="glass rounded-2xl p-5 border-l-4 border-l-blue-500">
+          <div className="glass rounded-3xl p-5 border-l-4 border-l-blue-500 shadow-xl">
             <button
               onClick={() => setShowReasoning(!showReasoning)}
-              className="w-full flex justify-between items-center text-sm font-semibold text-blue-400 focus:outline-none"
+              className="w-full flex justify-between items-center text-xs font-bold text-blue-400 focus:outline-none cursor-pointer"
             >
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-2 font-display text-xs">
                 <Brain className="w-4 h-4" />
-                AI Reasoning & Pipeline Telemetry
+                Pipeline Reasoning Timeline
               </span>
-              <span className="text-xs bg-blue-950 px-2.5 py-1 rounded-full text-blue-300 border border-blue-800">
-                {showReasoning ? "Hide Steps" : "Show Steps"}
+              <span className="text-[9px] bg-blue-500/10 px-2.5 py-1.5 rounded-xl text-blue-300 border border-blue-500/20 font-mono tracking-widest">
+                {showReasoning ? "COLLAPSE" : "EXPAND"}
               </span>
             </button>
 
             {showReasoning && (
-              <div className="mt-4 flex flex-col gap-4 text-xs text-gray-300 relative pl-4 border-l border-white/10 ml-2">
+              <div className="mt-5 flex flex-col gap-5 text-xs text-slate-300 relative pl-4 border-l border-white/10 ml-2.5 animate-fade-in font-semibold">
                 
                 {/* Detected Intent Badges */}
                 {activeResponse.reasoning.detected_intents && activeResponse.reasoning.detected_intents.length > 0 && (
                   <div>
-                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider block mb-1">Detected Intent(s)</span>
+                    <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest block mb-2 font-mono">Detected Intent(s)</span>
                     <div className="flex flex-wrap gap-1.5 mt-0.5">
                       {activeResponse.reasoning.detected_intents.map((int, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800 text-[9px] font-bold">
+                        <span key={i} className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-300 border border-blue-500/20 text-[9.5px] font-bold font-mono">
                           {int}
                         </span>
                       ))}
@@ -235,10 +260,10 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
                 {/* Databases Grounded */}
                 {activeResponse.reasoning.context_sources && activeResponse.reasoning.context_sources.length > 0 && (
                   <div>
-                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider block mb-1">Context Sources Accessed</span>
+                    <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest block mb-2 font-mono">Telemetry Grounded</span>
                     <div className="flex flex-wrap gap-1.5 mt-0.5">
                       {activeResponse.reasoning.context_sources.map((src, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-800 text-[9px] font-bold">
+                        <span key={i} className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 text-[9.5px] font-bold font-mono">
                           {src}
                         </span>
                       ))}
@@ -249,10 +274,10 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
                 {/* Rules Applied */}
                 {activeResponse.reasoning.decision_rules && activeResponse.reasoning.decision_rules.length > 0 && (
                   <div>
-                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider block mb-1">Planner Rules Applied</span>
+                    <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest block mb-2 font-mono">Decision Planner Rules</span>
                     <div className="flex flex-wrap gap-1.5 mt-0.5">
                       {activeResponse.reasoning.decision_rules.map((rule, i) => (
-                        <span key={i} className="px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800 text-[9px] font-bold">
+                        <span key={i} className="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/20 text-[9.5px] font-bold font-mono">
                           {rule}
                         </span>
                       ))}
@@ -262,47 +287,47 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
 
                 {/* Confidence reason analysis */}
                 {activeResponse.confidence_reason && (
-                  <div>
-                    <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider block mb-1">Confidence Scorer Analysis</span>
-                    <p className="text-gray-300 leading-normal text-[11px] font-medium">{activeResponse.confidence_reason}</p>
+                  <div className="border-t border-white/5 pt-3.5">
+                    <span className="text-[9px] text-slate-500 uppercase font-bold tracking-widest block mb-1.5 font-mono">Confidence Justification</span>
+                    <p className="text-slate-300 leading-relaxed font-semibold">{activeResponse.confidence_reason}</p>
                   </div>
                 )}
 
                 {/* Standard Timeline sequence */}
-                <div className="relative border-t border-white/5 pt-3 mt-1 flex flex-col gap-3">
+                <div className="relative border-t border-white/5 pt-4 mt-1 flex flex-col gap-4">
                   {/* Intent Analysis */}
-                  <div className="relative">
-                    <span className="absolute -left-[21px] top-0 bg-blue-600 p-0.5 rounded-full"><Brain className="w-3 h-3 text-white" /></span>
-                    <div className="font-semibold text-white">1. Intent Analysis</div>
-                    <div className="text-gray-400 mt-0.5">{activeResponse.reasoning.intent_analysis}</div>
+                  <div className="relative pl-6">
+                    <span className="absolute left-0 top-0.5 bg-blue-600 p-0.5 rounded-lg"><Brain className="w-3.5 h-3.5 text-white" /></span>
+                    <div className="font-extrabold text-white mb-1 font-display text-xs">1. Intent Classification</div>
+                    <div className="text-slate-400 leading-relaxed font-medium">{activeResponse.reasoning.intent_analysis}</div>
                   </div>
 
                   {/* Role Detection */}
-                  <div className="relative">
-                    <span className="absolute -left-[21px] top-0 bg-emerald-600 p-0.5 rounded-full"><User className="w-3 h-3 text-white" /></span>
-                    <div className="font-semibold text-white">2. Role Detection & Guardrails</div>
-                    <div className="text-gray-400 mt-0.5">{activeResponse.reasoning.role_detection}</div>
+                  <div className="relative pl-6">
+                    <span className="absolute left-0 top-0.5 bg-emerald-600 p-0.5 rounded-lg"><User className="w-3.5 h-3.5 text-white" /></span>
+                    <div className="font-extrabold text-white mb-1 font-display text-xs">2. Role Scoping & Guardrails</div>
+                    <div className="text-slate-400 leading-relaxed font-medium">{activeResponse.reasoning.role_detection}</div>
                   </div>
 
                   {/* Context Builder */}
-                  <div className="relative">
-                    <span className="absolute -left-[21px] top-0 bg-purple-600 p-0.5 rounded-full"><Database className="w-3 h-3 text-white" /></span>
-                    <div className="font-semibold text-white">3. Grounded Context Construction</div>
-                    <div className="text-gray-400 mt-0.5">{activeResponse.reasoning.context_builder}</div>
+                  <div className="relative pl-6">
+                    <span className="absolute left-0 top-0.5 bg-purple-600 p-0.5 rounded-lg"><Database className="w-3.5 h-3.5 text-white" /></span>
+                    <div className="font-extrabold text-white mb-1 font-display text-xs">3. Grounded Context Construction</div>
+                    <div className="text-slate-400 leading-relaxed font-medium">{activeResponse.reasoning.context_builder}</div>
                   </div>
 
                   {/* Decision Planner */}
-                  <div className="relative">
-                    <span className="absolute -left-[21px] top-0 bg-amber-600 p-0.5 rounded-full"><ShieldAlert className="w-3 h-3 text-white" /></span>
-                    <div className="font-semibold text-white">4. Decision Planner & Safety Rules</div>
-                    <div className="text-gray-400 mt-0.5">{activeResponse.reasoning.decision_planner}</div>
+                  <div className="relative pl-6">
+                    <span className="absolute left-0 top-0.5 bg-amber-600 p-0.5 rounded-lg"><ShieldAlert className="w-3.5 h-3.5 text-white" /></span>
+                    <div className="font-extrabold text-white mb-1 font-display text-xs">4. Decision Planner Strategy</div>
+                    <div className="text-slate-400 leading-relaxed font-medium">{activeResponse.reasoning.decision_planner}</div>
                   </div>
 
                   {/* Grounded Prompt */}
-                  <div className="relative">
-                    <span className="absolute -left-[21px] top-0 bg-cyan-600 p-0.5 rounded-full"><Cpu className="w-3 h-3 text-white" /></span>
-                    <div className="font-semibold text-white">5. Grounded Prompt Prompting</div>
-                    <div className="text-gray-400 mt-0.5 font-mono text-[10px] truncate max-w-md">{activeResponse.reasoning.grounded_prompt}</div>
+                  <div className="relative pl-6">
+                    <span className="absolute left-0 top-0.5 bg-cyan-600 p-0.5 rounded-lg"><Cpu className="w-3.5 h-3.5 text-white" /></span>
+                    <div className="font-extrabold text-white mb-1 font-display text-xs">5. Grounded Prompt Prompting</div>
+                    <div className="text-slate-500 font-mono text-[9px] truncate max-w-sm">{activeResponse.reasoning.grounded_prompt}</div>
                   </div>
                 </div>
               </div>
@@ -310,19 +335,22 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
           </div>
 
           {/* Structured Output Cards */}
-          <div className="glass p-6 rounded-2xl glow-card flex flex-col gap-5">
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-bold px-3 py-1 rounded bg-blue-950 border border-blue-800 text-blue-400 uppercase tracking-wider">
-                Copilot Decision Recommendation
+          <div className="glass p-6 rounded-3xl shadow-xl border-white/5 flex flex-col gap-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+              <span className="self-start text-[9px] font-extrabold px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 uppercase tracking-widest font-mono">
+                Copilot Recommendation
               </span>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-400">Confidence: {(activeResponse.confidence * 100).toFixed(0)}%</span>
-                <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase ${
+              <div className="flex items-center gap-3.5">
+                <div className="text-xs text-slate-400 font-bold flex items-center gap-1.5">
+                  <span>Confidence:</span> 
+                  <strong className="text-white font-mono">{(activeResponse.confidence * 100).toFixed(0)}%</strong>
+                </div>
+                <span className={`text-[9px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider font-mono border ${
                   activeResponse.priority === "Critical" || activeResponse.priority === "High"
-                    ? "bg-red-950 text-red-400 border border-red-800"
+                    ? "bg-red-500/10 text-red-400 border-red-500/20"
                     : activeResponse.priority === "Medium"
-                    ? "bg-amber-950 text-amber-400 border border-amber-800"
-                    : "bg-emerald-950 text-emerald-400 border border-emerald-800"
+                    ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                    : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                 }`}>
                   {activeResponse.priority}
                 </span>
@@ -331,11 +359,11 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
 
             {/* Warnings block */}
             {activeResponse.warnings.length > 0 && (
-              <div className="p-4 bg-red-950/40 border border-red-900/60 rounded-xl flex items-start gap-2.5">
+              <div className="p-4.5 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-start gap-3.5">
                 <AlertTriangle className="text-red-400 w-5 h-5 shrink-0 mt-0.5" />
                 <div>
-                  <div className="text-sm font-semibold text-red-300">Active Warning Signals</div>
-                  <ul className="list-disc pl-4 mt-1 text-xs text-red-200/80 space-y-1">
+                  <div className="text-xs font-extrabold text-red-300 uppercase tracking-wider font-display">Active Warning Signals</div>
+                  <ul className="list-disc pl-4 mt-1.5 text-xs text-red-300/80 space-y-1.5 font-semibold leading-relaxed">
                     {activeResponse.warnings.map((w, idx) => (
                       <li key={idx}>{w}</li>
                     ))}
@@ -346,95 +374,95 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
 
             {/* Missing Telemetry warnings */}
             {activeResponse.missing_information && activeResponse.missing_information.length > 0 && (
-              <div className="p-3 bg-yellow-950/40 border border-yellow-900/50 rounded-xl flex items-start gap-2 text-xs text-yellow-400 font-semibold">
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-yellow-500" />
+              <div className="p-3 bg-yellow-500/5 border border-yellow-500/10 rounded-2xl flex items-start gap-2.5 text-xs text-yellow-400 font-semibold">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-yellow-500 animate-pulse" />
                 <div>
                   <span>Feeds Offline (Estimates Used): </span>
-                  <span className="text-gray-300 font-mono text-[10.5px] ml-1">{activeResponse.missing_information.join(", ")}</span>
+                  <span className="text-slate-400 font-mono text-[9.5px] ml-1">{activeResponse.missing_information.join(", ")}</span>
                 </div>
               </div>
             )}
 
             {/* Executive Summary */}
-            <div>
-              <h4 className="text-sm font-bold text-gray-400 uppercase mb-2">Executive Summary</h4>
-              <p className="text-base text-gray-100 leading-relaxed font-semibold">
+            <div className="space-y-2.5">
+              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono">Executive Summary</h4>
+              <p className="text-sm sm:text-base text-slate-200 leading-relaxed font-bold">
                 {activeResponse.summary}
               </p>
             </div>
 
             {/* Multi-Step Action Plan */}
             {activeResponse.multi_step_plan && (
-              <div className="p-4 bg-blue-950/20 border border-blue-900/40 rounded-xl flex flex-col gap-2.5">
-                <div className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-wider">
+              <div className="p-5 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex flex-col gap-4">
+                <div className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-widest font-mono">
                   <Brain className="w-4 h-4 text-blue-400 animate-pulse" />
                   Chronological Multi-Step Action Plan
                 </div>
-                <div className="text-[11px] text-gray-300">
-                  <div className="mb-2"><strong className="text-white">Problem:</strong> {activeResponse.multi_step_plan.problem}</div>
-                  <div className="mb-2"><strong className="text-white">Assessment:</strong> {activeResponse.multi_step_plan.assessment}</div>
-                  <div className="mb-2">
-                    <strong className="text-white block mb-1">Recommended Actions Sequence:</strong>
-                    <div className="flex flex-col gap-2 pl-2 border-l border-blue-500/40">
+                <div className="text-[11.5px] text-slate-300 space-y-3.5 font-semibold">
+                  <div><strong className="text-white font-display text-xs">Problem:</strong> {activeResponse.multi_step_plan.problem}</div>
+                  <div><strong className="text-white font-display text-xs">Assessment:</strong> {activeResponse.multi_step_plan.assessment}</div>
+                  <div>
+                    <strong className="text-white block mb-2 font-display text-xs">Recommended Actions Sequence:</strong>
+                    <div className="flex flex-col gap-3 pl-3.5 border-l border-blue-500/20">
                       {activeResponse.multi_step_plan.recommended_actions.map((step, idx) => (
-                        <div key={idx} className="flex gap-2">
-                          <span className="w-5 h-5 shrink-0 bg-blue-900 text-blue-300 border border-blue-800 rounded-full flex items-center justify-center text-[9px] font-bold">
+                        <div key={idx} className="flex gap-3 items-start">
+                          <span className="w-5 h-5 shrink-0 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full flex items-center justify-center text-[9.5px] font-bold font-mono">
                             {idx + 1}
                           </span>
-                          <span className="text-[11.5px] leading-relaxed">{step}</span>
+                          <span className="text-slate-300 leading-relaxed">{step}</span>
                         </div>
                       ))}
                     </div>
                   </div>
-                  <div className="mb-1"><strong className="text-white">Expected Impact:</strong> {activeResponse.multi_step_plan.expected_impact}</div>
-                  <div><strong className="text-white">Monitoring Advice:</strong> {activeResponse.multi_step_plan.monitoring_advice}</div>
+                  <div className="border-t border-white/5 pt-3"><strong className="text-white font-display text-xs">Expected Impact:</strong> {activeResponse.multi_step_plan.expected_impact}</div>
+                  <div><strong className="text-white font-display text-xs">Monitoring Advice:</strong> {activeResponse.multi_step_plan.monitoring_advice}</div>
                 </div>
               </div>
             )}
 
             {/* Recommendation Cards */}
-            <div>
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">AI Actionable Recommendations</h4>
+            <div className="space-y-4">
+              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono">AI Actionable Recommendations</h4>
               <div className="flex flex-col gap-4">
                 {activeResponse.recommendations.map((rec, idx) => {
                   const borderAccent = rec.priority === "High" 
-                    ? "border-l-4 border-l-red-500" 
-                    : (rec.priority === "Medium" ? "border-l-4 border-l-amber-500" : "border-l-4 border-l-emerald-500");
+                    ? "border-l-4 border-l-red-500 bg-red-500/[0.01]" 
+                    : (rec.priority === "Medium" ? "border-l-4 border-l-amber-500 bg-amber-500/[0.01]" : "border-l-4 border-l-emerald-500 bg-emerald-500/[0.01]");
                   
                   return (
                     <div 
                       key={idx} 
-                      className={`p-4 bg-black/35 border border-white/5 rounded-r-xl ${borderAccent} hover:border-white/10 transition-colors flex flex-col gap-3`}
+                      className={`p-4.5 border border-white/5 rounded-r-2xl ${borderAccent} hover:border-white/10 transition-all flex flex-col gap-4 shadow-sm`}
                     >
                       {/* Summary Title & Priority */}
                       <div className="flex justify-between items-start gap-3">
-                        <h5 className="font-bold text-white text-sm flex items-center gap-1.5 leading-snug">
-                          <CheckCircle className="w-4 h-4 text-blue-400 shrink-0" />
+                        <h5 className="font-extrabold text-white text-xs sm:text-sm flex items-center gap-2 leading-snug font-display">
+                          <CheckCircle className="w-4.5 h-4.5 text-blue-400 shrink-0" />
                           {rec.action}
                         </h5>
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider shrink-0 ${
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 font-mono border ${
                           rec.priority === "High"
-                            ? "bg-red-950/80 text-red-400 border border-red-900/30"
+                            ? "bg-red-500/10 text-red-400 border border-red-500/20"
                             : rec.priority === "Medium"
-                            ? "bg-amber-950/80 text-amber-400 border border-amber-900/30"
-                            : "bg-emerald-950/80 text-emerald-400 border border-emerald-900/30"
+                            ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                            : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                         }`}>
                           {rec.priority}
                         </span>
                       </div>
 
                       {/* Reasoning Analysis */}
-                      <div className="text-[11px] text-gray-300 leading-relaxed bg-white/5 p-2.5 rounded-lg border border-white/5 flex flex-col gap-2">
+                      <div className="text-[11.5px] text-slate-300 leading-relaxed bg-slate-950/80 p-3.5 rounded-2xl border border-white/5 flex flex-col gap-3.5 font-semibold">
                         <div>
-                          <strong className="text-gray-400 block text-[9px] uppercase tracking-wider mb-0.5">Reasoning Analysis</strong>
-                          {rec.detail}
+                          <strong className="text-slate-500 block text-[9.5px] uppercase tracking-widest mb-1.5 font-mono">Reasoning Analysis</strong>
+                          <p className="font-medium text-slate-300 leading-relaxed">{rec.detail}</p>
                         </div>
                         
                         {/* Supporting Data */}
                         {rec.supporting_data && rec.supporting_data.length > 0 && (
-                          <div className="border-t border-white/5 pt-1.5 mt-0.5">
-                            <strong className="text-gray-400 block text-[9px] uppercase tracking-wider mb-0.5">Supporting Data</strong>
-                            <ul className="list-disc pl-3 text-[10px] text-gray-300 space-y-0.5">
+                          <div className="border-t border-white/5 pt-3.5">
+                            <strong className="text-slate-500 block text-[9.5px] uppercase tracking-widest mb-1.5 font-mono">Supporting Data</strong>
+                            <ul className="list-disc pl-4 text-[10.5px] text-slate-300 space-y-1 font-medium">
                               {rec.supporting_data.map((sd, i) => (
                                 <li key={i}>{sd}</li>
                               ))}
@@ -444,9 +472,9 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
 
                         {/* Assumptions */}
                         {rec.assumptions && rec.assumptions.length > 0 && (
-                          <div className="border-t border-white/5 pt-1.5">
-                            <strong className="text-gray-400 block text-[9px] uppercase tracking-wider mb-0.5">Operational Assumptions</strong>
-                            <ul className="list-disc pl-3 text-[10px] text-gray-300 space-y-0.5">
+                          <div className="border-t border-white/5 pt-3.5">
+                            <strong className="text-slate-500 block text-[9.5px] uppercase tracking-widest mb-1.5 font-mono">Operational Assumptions</strong>
+                            <ul className="list-disc pl-4 text-[10.5px] text-slate-300 space-y-1 font-medium">
                               {rec.assumptions.map((asm, i) => (
                                 <li key={i}>{asm}</li>
                               ))}
@@ -456,9 +484,9 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
 
                         {/* Suggested Actions */}
                         {rec.suggested_actions && rec.suggested_actions.length > 0 && (
-                          <div className="border-t border-white/5 pt-1.5">
-                            <strong className="text-gray-400 block text-[9px] uppercase tracking-wider mb-0.5">Suggested Action Checklist</strong>
-                            <ul className="list-decimal pl-3 text-[10px] text-gray-300 space-y-0.5">
+                          <div className="border-t border-white/5 pt-3.5">
+                            <strong className="text-slate-500 block text-[9.5px] uppercase tracking-widest mb-1.5 font-mono">Suggested Action Checklist</strong>
+                            <ul className="list-decimal pl-4 text-[10.5px] text-slate-300 space-y-1.5 font-medium">
                               {rec.suggested_actions.map((act, i) => (
                                 <li key={i}>{act}</li>
                               ))}
@@ -468,14 +496,14 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
                       </div>
 
                       {/* Card Footer: Confidence & Next Step */}
-                      <div className="flex justify-between items-center text-[10px] border-t border-white/5 pt-2 mt-1">
-                        <span className="text-gray-400">
+                      <div className="flex justify-between items-center text-[10.5px] border-t border-white/5 pt-3.5">
+                        <span className="text-slate-400 font-medium font-mono text-[10px]">
                           Confidence Index: <strong className="text-white">{(rec.confidence_score ? rec.confidence_score * 100 : activeResponse.confidence * 100).toFixed(0)}%</strong>
                         </span>
                         {activeResponse.next_actions[idx] && (
-                          <span className="text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1 cursor-pointer">
+                          <span className="text-blue-400 hover:text-blue-300 font-bold flex items-center gap-1 cursor-pointer font-display text-[11px]">
                             Next Step: {activeResponse.next_actions[idx]}
-                            <ArrowRight className="w-3 h-3" />
+                            <ArrowRight className="w-3.5 h-3.5 animate-pulse" />
                           </span>
                         )}
                       </div>
@@ -487,11 +515,11 @@ export const CopilotPanel: React.FC<CopilotPanelProps> = ({
 
             {/* Next Actions Summary Footer */}
             {activeResponse.next_actions.length > activeResponse.recommendations.length && (
-              <div className="mt-2 pt-4 border-t border-white/5">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Additional Next Actions</h4>
-                <div className="flex flex-col gap-2">
+              <div className="mt-2 pt-4.5 border-t border-white/5">
+                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono">Additional Next Actions</h4>
+                <div className="flex flex-col gap-3">
                   {activeResponse.next_actions.slice(activeResponse.recommendations.length).map((act, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-xs text-blue-400 hover:text-blue-300 font-semibold cursor-pointer">
+                    <div key={idx} className="flex items-center gap-2 text-xs text-blue-400 hover:text-blue-300 font-bold cursor-pointer font-display">
                       <ArrowRight className="w-3.5 h-3.5" />
                       {act}
                     </div>

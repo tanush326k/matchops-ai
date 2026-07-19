@@ -35,7 +35,7 @@ def startup_event():
 def get_health():
     return {
         "status": "ok",
-        "version": "RC3",
+        "version": "Final",
         "simulation": True,
         "gemini_available": bool(orchestrator.api_key),
         "fallback_available": True,
