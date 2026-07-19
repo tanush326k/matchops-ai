@@ -1,3 +1,4 @@
+import { API_BASE } from "../config/api";
 import React, { useState, useCallback } from "react";
 import { Send, Sparkles, AlertTriangle, ArrowRight, Brain, User, Database, ShieldAlert, Cpu } from "lucide-react";
 import type { Role, Language, AIResponse } from "../types";
@@ -22,6 +23,7 @@ export const CopilotPanel = React.memo<CopilotPanelProps>(({
 }) => {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingPhase, setLoadingPhase] = useState(0);
   const [showReasoning, setShowReasoning] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,9 +75,15 @@ export const CopilotPanel = React.memo<CopilotPanelProps>(({
   const handleSend = useCallback(async (textToSend: string) => {
     if (!textToSend.trim()) return;
     setLoading(true);
+    setLoadingPhase(0);
     setError(null);
+
+    const interval = setInterval(() => {
+      setLoadingPhase(p => (p < 4 ? p + 1 : p));
+    }, 450);
+
     try {
-      const response = await fetch("http://localhost:8000/api/copilot", {
+      const response = await fetch(`${API_BASE}/api/copilot`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -96,6 +104,7 @@ export const CopilotPanel = React.memo<CopilotPanelProps>(({
     } catch {
       setError("Network connection failure. Verify that your MatchOps API server is running on port 8000.");
     } finally {
+      clearInterval(interval);
       setLoading(false);
     }
   }, [role, language, selectedGate, accessibilityMode, getOrCreateSessionId, onQueryProcessed]);
@@ -188,14 +197,38 @@ export const CopilotPanel = React.memo<CopilotPanelProps>(({
       {loading && (
         <div className="flex-1 flex flex-col gap-6 overflow-y-auto pr-1">
           <div className="glass p-5 rounded-2xl border-l-4 border-l-blue-500 animate-pulse flex flex-col gap-4">
-            <div className="flex justify-between items-center">
-              <div className="h-4 bg-white/10 rounded w-1/3"></div>
-              <div className="h-6 bg-white/10 rounded-full w-16"></div>
-            </div>
-            <div className="space-y-2.5 mt-2">
-              <div className="h-3 bg-white/10 rounded w-full"></div>
-              <div className="h-3 bg-white/10 rounded w-5/6"></div>
-              <div className="h-3 bg-white/10 rounded w-2/3"></div>
+            <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest font-mono">Multi-Stage Reasoning Pipeline</h4>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2.5 text-xs font-semibold">
+                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] ${loadingPhase >= 0 ? "bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold" : "bg-white/5 text-slate-500"}`}>
+                  {loadingPhase > 0 ? "✓" : "⚡"}
+                </span>
+                <span className={loadingPhase === 0 ? "text-blue-400 font-bold" : "text-slate-400"}>1. Multi-Intent Classifier</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs font-semibold">
+                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] ${loadingPhase >= 1 ? "bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold" : "bg-white/5 text-slate-500"}`}>
+                  {loadingPhase > 1 ? "✓" : (loadingPhase === 1 ? "⚡" : "•")}
+                </span>
+                <span className={loadingPhase === 1 ? "text-blue-400 font-bold" : "text-slate-400"}>2. Role Authorization & Guardrails</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs font-semibold">
+                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] ${loadingPhase >= 2 ? "bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold" : "bg-white/5 text-slate-500"}`}>
+                  {loadingPhase > 2 ? "✓" : (loadingPhase === 2 ? "⚡" : "•")}
+                </span>
+                <span className={loadingPhase === 2 ? "text-blue-400 font-bold" : "text-slate-400"}>3. Context Grounder (Live Telemetry)</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs font-semibold">
+                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] ${loadingPhase >= 3 ? "bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold" : "bg-white/5 text-slate-500"}`}>
+                  {loadingPhase > 3 ? "✓" : (loadingPhase === 3 ? "⚡" : "•")}
+                </span>
+                <span className={loadingPhase === 3 ? "text-blue-400 font-bold" : "text-slate-400"}>4. Decision Planner Strategy</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs font-semibold">
+                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] ${loadingPhase >= 4 ? "bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold" : "bg-white/5 text-slate-500"}`}>
+                  {loadingPhase === 4 ? "⚡" : "•"}
+                </span>
+                <span className={loadingPhase === 4 ? "text-blue-400 font-bold" : "text-slate-400"}>5. Gemini AI Response Generation</span>
+              </div>
             </div>
           </div>
           
@@ -327,7 +360,7 @@ export const CopilotPanel = React.memo<CopilotPanelProps>(({
                   {/* Grounded Prompt */}
                   <div className="relative pl-6">
                     <span className="absolute left-0 top-0.5 bg-cyan-600 p-0.5 rounded-lg"><Cpu className="w-3.5 h-3.5 text-white" /></span>
-                    <div className="font-extrabold text-white mb-1 font-display text-xs">5. Grounded Prompt Prompting</div>
+                    <div className="font-extrabold text-white mb-1 font-display text-xs">5. Grounded Prompt Construction</div>
                     <div className="text-slate-500 font-mono text-[9px] truncate max-w-sm">{activeResponse.reasoning.grounded_prompt}</div>
                   </div>
                 </div>

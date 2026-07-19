@@ -18,7 +18,7 @@ LANGUAGES = {
 ROLE_PERMISSIONS = {
     "Fan": ["Navigation", "Accessibility", "Transport Planning", "Lost & Found", "General Information"],
     "Volunteer": ["Navigation", "Accessibility", "Crowd Intelligence", "Incident Reporting", "Lost & Found", "General Information"],
-    "Security": ["Navigation", "Accessibility", "Crowd Intelligence", "Crowd Risk", "Incident Reporting", "Emergency Response", "Transport Planning", "General Information"],
+    "Security": ["Navigation", "Accessibility", "Crowd Intelligence", "Crowd Risk", "Incident Reporting", "Emergency Response", "Transport Planning", "Lost & Found", "General Information"],
     "Organizer": [
         "Navigation", "Accessibility", "Crowd Intelligence", "Crowd Risk", 
         "Incident Reporting", "Emergency Response", "Transport Planning", 
@@ -38,6 +38,9 @@ class AIOrchestrator:
             self.sessions[session_id] = []
 
     def run_query(self, query: str, role: str, language: str = "English", gate_pref: Optional[str] = None, accessibility_friendly: bool = False, session_id: str = "default") -> AIQueryResponse:
+        # Normalize role to Title Case to match ROLE_PERMISSIONS keys
+        role = role.strip().title()
+        
         # Step 1: Multiple Intent Analysis
         intents = self._analyze_intents(query)
         
